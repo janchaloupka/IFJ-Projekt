@@ -1,0 +1,31 @@
+{
+	"editor.insertSpaces": false,
+	"files.exclude": {
+		"*.o": true,
+		"*.out": true,
+		"main": true
+	},
+	"files.eol": "\n",
+	"doxdocgen.generic.briefTemplate": "{text}",
+	"doxdocgen.file.fileOrder": [
+		"file",
+		"brief",
+		"empty",
+		"empty",
+		"version",
+		"date",
+	],
+	"todohighlight.include": [
+		"**/*.c",
+		"**/*.h"
+	],
+	"todohighlight.keywordsPattern": "TODO(:)?",
+	"todohighlight.defaultStyle": {
+		"color": "black",
+		"overviewRulerColor": "aqua",
+		"backgroundColor": "aqua"
+	},
+	"files.associations": {
+		"scanner.h": "c"
+	}
+}
