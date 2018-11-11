@@ -1,0 +1,48 @@
+//program intitalizationion
+<prog>      -> <func> EOL <prog>
+<prog>      -> <body> EOL <prog>
+<prog>      -> EOF
+
+//expression
+<expr>      -> nil
+<expr>      -> id
+<expr>      -> integer
+<expr>      -> string
+<expr>      -> float
+<expr>      -> not <expr>
+<expr>      -> <expr> + <expr>
+<expr>      -> <expr> - <expr>
+<expr>      -> <expr> / <expr>
+<expr>      -> <expr> * <expr>
+<expr>      -> <expr> == <expr>
+<expr>      -> <expr> != <expr>
+<expr>      -> <expr> < <expr>
+<expr>      -> <expr> > <expr>
+<expr>      -> <expr> <= <expr>
+<expr>      -> <expr> >= <expr>
+<expr>      -> ( <expr> )
+
+//body
+<body>      -> ε
+<body>      -> <expr> EOL <body>
+<body>      -> <if> EOL <body>
+<body>      -> <def_var> EOL <body>
+<body>      -> <while> EOL <body>
+
+//fce
+<func>      -> def id ( <params> ) EOL <body> end
+<call_func> -> id = id ( <params> )
+<call_func> -> id ( <params> )
+<params>    -> id <params_n>
+<params>    -> ε
+<params_n>  -> , <params>
+<params_n>  -> ε
+
+//variables
+<def_var>   -> id = <expr>
+
+//sttruktura
+<if>        -> if <expr> then EOL <body> else EOL <body> end
+
+//cyklus
+<while>     -> while <expr> do EOL <body> end
