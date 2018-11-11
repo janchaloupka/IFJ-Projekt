@@ -28,6 +28,7 @@
 <body>      -> <if> EOL <body>
 <body>      -> <def_var> EOL <body>
 <body>      -> <while> EOL <body>
+<body>      -> EOL <body>
 
 //fce
 <func>      -> def id ( <params> ) EOL <body> end
