@@ -24,6 +24,7 @@
 
 //body
 <body>      -> ε
+<body>		-> <func> EOL <body>
 <body>      -> <expr> EOL <body>
 <body>      -> <if> EOL <body>
 <body>      -> <def_var> EOL <body>
