@@ -31,8 +31,8 @@
 
 //fce
 <func>      -> def id ( <params> ) EOL <body> end
-<call_func> -> id = id ( <params> )
 <call_func> -> id ( <params> )
+<call_func> -> id <params>
 <params>    -> id <params_n>
 <params>    -> ε
 <params_n>  -> , <params>
@@ -40,6 +40,7 @@
 
 //variables
 <def_var>   -> id = <expr>
+<def_var>   -> id = <call_func>
 
 //sttruktura
 <if>        -> if <expr> then EOL <body> else EOL <body> end
