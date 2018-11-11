@@ -53,3 +53,5 @@ dkms.conf
 
 main
 main.exe*
+
+.DS_Store
