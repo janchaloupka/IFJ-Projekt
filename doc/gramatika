@@ -1,7 +1,5 @@
 //program intitalizationion
-<prog>      -> <func> EOL <prog>
-<prog>      -> <body> EOL <prog>
-<prog>      -> EOF
+<prog>      -> <body> EOF
 
 //expression
 <expr>      -> nil
@@ -24,7 +22,8 @@
  
 //body
 <body>      -> ε
-<body>		  -> <func> EOL <body>
+<body>      -> <func> EOL <body>
+<body>      -> <call_func> EOL <body>
 <body>      -> <expr> EOL <body>
 <body>      -> <if> EOL <body>
 <body>      -> <def_var> EOL <body>
