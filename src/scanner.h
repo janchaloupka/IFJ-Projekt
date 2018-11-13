@@ -42,6 +42,7 @@ typedef enum{
 	SEP_RB,		//!< Levá závorka
 	SEP_LB,		//!< Pravá závorka
 	SEP_EOL,	//!< Konec řádku
+	SEP_EOF,	//!< Konec řádku
 	BLOCK_SEP_END, 		//!< Konec bloku oddělovačů
 	BLOCK_OP_START, 	//!< Začátek bloku operátorů
 	OP_ADD,		//!< Matematika - Sčítání
