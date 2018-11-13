@@ -1,25 +1,27 @@
-NAME=main
-OBJFILES=$(NAME).o scanner.o
-
+NAME=compiler
+SRCFOLDER := src
+OBJFOLDER := obj
+SRCFILES := $(wildcard $(SRCFOLDER)/*.c)
+OBJFILES := $(patsubst %.c,$(OBJFOLDER)/%.o,$(notdir $(SRCFILES)))
 CC=gcc
 CFLAGS= -std=c99 -pedantic -Wall -Wextra -g
 
 # vzorové pravidlo pro generování všech objektových souborů
-%.o : %.c
-	$(CC) $(CFLAGS) -c $<
+$(OBJFOLDER)/%.o : $(SRCFOLDER)/%.c
+	mkdir -p $(OBJFOLDER)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Startovací pravidlo - pro přehlednost
 all: $(NAME)
 
 clean:
-	rm -f *.o
-	rm -f *.out
+	rm -rf $(OBJFOLDER)/
 	rm -f $(NAME)
 
 # Generování závislostí
 # při změně souborů spustíme 'make dep'
 dep:
-	$(CC) -MM *.c >dep.list
+	$(CC) -MM $(SRCFOLDER)/*.c >dep.list
 
 -include dep.list
 

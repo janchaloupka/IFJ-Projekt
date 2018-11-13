@@ -1,4 +1,4 @@
-# IFJ-Projekt
+# IFJ Projekt 2018
 Překladač jazyka IFJ18 - Projekt do IFJ 2018, první varianta zadání
 
 

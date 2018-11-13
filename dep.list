@@ -1,0 +1,2 @@
+main.o: src/main.c src/main.h src/scanner.h
+scanner.o: src/scanner.c src/scanner.h
