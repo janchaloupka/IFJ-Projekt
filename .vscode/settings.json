@@ -1,10 +1,9 @@
 {
 	"editor.insertSpaces": false,
 	"files.exclude": {
-		"*.o": true,
-		"*.out": true,
-		"main": true,
-		"main.exe*": true
+		"obj": true,
+		"compiler": true,
+		"compiler.exe*": true
 	},
 	"files.eol": "\n",
 	"doxdocgen.generic.briefTemplate": "{text}",
