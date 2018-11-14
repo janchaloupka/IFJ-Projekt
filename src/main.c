@@ -3,10 +3,10 @@
 int main(int argc, char const *argv[])
 {
 	pToken token = NULL;
-	while(token == NULL || token->type != SEP_EOF){
+	while(token == NULL || token->type != T_EOF){
 		scannerGetToken(stdin, &token);
-		printf("\nTyp: ");
-		scannerPrintType(token);
+		printf("type: ");
+		scannerPrintToken(token);
 	}
-	return 0;
+	return scannerFoundError ? 1 : 0;
 }

@@ -26,38 +26,39 @@ char const *keywords[KEYWORDS_LEN];
  * Typy tokenů 
  */
 typedef enum{
-	UNKNOWN, 	//!< Výchozí typ
-	ID, 		//!< Identifikátor funkce/proměnné
-	ID_FN, 		//!< Identifikátor funkce
-	KW_DEF,		//!< Keyword - DEF
-	KW_DO,		//!< Keyword - DO
-	KW_ELSE,	//!< Keyword - ELSE
-	KW_END,		//!< Keyword - END
-	KW_IF,		//!< Keyword - IF
-	KW_NOT,		//!< Keyword - NOT
-	KW_NIL,		//!< Keyword - NIL
-	KW_THEN,	//!< Keyword - THEN
-	KW_WHILE,	//!< Keyword - WHILE
-	SEP_RB,		//!< Levá závorka
-	SEP_LB,		//!< Pravá závorka
-	SEP_EOL,	//!< Konec řádku
-	SEP_EOF,	//!< Konec souboru
-	OP_ADD,		//!< Matematika - Sčítání
-	OP_SUB,		//!< Matematika - Krácení
-	OP_MUL,		//!< Matematika - Násobení
-	OP_DIV,		//!< Matematika - Dělení
-	OP_EQL,		//!< Porovnání - Rovná se
-	OP_NEQ,		//!< Porovnání - Nerovná se
-	OP_LT,		//!< Porovnání - Menší
-	OP_GT,		//!< Porovnání - Větší
-	OP_LTE,		//!< Porovnání - Menší nebo se rovná
-	OP_GTE,		//!< Porovnání - Větší nebo se rovná
-	OP_ASGMT,	//!< Přiřazení
-	INTEGER,	//!< Celé kladné číslo
-	DOUBLE,		//!< Desetinné kladné číslo
-	DOUBLE_EXP,	//!< Desetinné kladné číslo zapsané exponentem
-	STRING,		//!< Řetězec znaků
-	ERROR		//!< Speciální typ, při parsování tohoto úseku nastala chyba
+	T_UNKNOWN, 	//!< Výchozí typ
+	T_ID, 		//!< Identifikátor funkce/proměnné
+	T_IDFN, 	//!< Identifikátor funkce
+	T_DEF,		//!< Keyword - DEF
+	T_DO,		//!< Keyword - DO
+	T_ELSE,		//!< Keyword - ELSE
+	T_END,		//!< Keyword - END
+	T_IF,		//!< Keyword - IF
+	T_NOT,		//!< Keyword - NOT
+	T_NIL,		//!< Keyword - NIL
+	T_THEN,		//!< Keyword - THEN
+	T_WHILE,	//!< Keyword - WHILE
+	T_RBRCKT,	//!< Levá závorka
+	T_LBRCKT,	//!< Pravá závorka
+	T_COMMA,	//!< Oddělovací čárka
+	T_EOL,		//!< Konec řádku
+	T_EOF,		//!< Konec souboru
+	T_ADD,		//!< Matematika - Sčítání
+	T_SUB,		//!< Matematika - Krácení
+	T_MUL,		//!< Matematika - Násobení
+	T_DIV,		//!< Matematika - Dělení
+	T_EQL,		//!< Porovnání - Rovná se
+	T_NEQ,		//!< Porovnání - Nerovná se
+	T_LT,		//!< Porovnání - Menší
+	T_GT,		//!< Porovnání - Větší
+	T_LTE,		//!< Porovnání - Menší nebo se rovná
+	T_GTE,		//!< Porovnání - Větší nebo se rovná
+	T_ASSIGN,	//!< Přiřazení
+	T_INTEGER,	//!< Celé kladné číslo
+	T_DOUBLE,	//!< Desetinné kladné číslo
+	T_DOUBLE_E,	//!< Desetinné kladné číslo zapsané exponentem
+	T_STRING,	//!< Řetězec znaků
+	T_ERROR		//!< Speciální typ, při parsování tohoto úseku nastala chyba
 } tType;
 
 
@@ -85,6 +86,7 @@ typedef enum{
 	STATE_LCMNT,
 	STATE_LBR,
 	STATE_RBR,
+	STATE_COMMA,
 	STATE_ID,
 	STATE_ID_FN,
 	STATE_STR,
@@ -132,6 +134,9 @@ typedef struct Token{
 	union TokenData data;	//!< Konkrétní hodnota tokenu
 } *pToken;
 
+bool scannerFoundError;
+
 void scannerGetToken(FILE *file, pToken *output);
 void scannerFSM(FILE *file, pToken *output);
-void scannerPrintType(pToken token);
+void scannerPrintToken(pToken token);
+void scannerHandleError(tType state, char currChar, unsigned int line, unsigned int pos);
