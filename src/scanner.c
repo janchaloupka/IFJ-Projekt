@@ -12,289 +12,207 @@ char const *keywords[] = {
 	"while"
 };
 
-void scannerDebugPrint(pToken firstToken){
-	char *typeToStr[] = {
-		"UNKNOWN",
-		"IDENTIFIER",
-		"BLOCK_KW_START",
-		"KW_DEF",
-		"KW_DO",
-		"KW_ELSE",
-		"KW_END",
-		"KW_IF",
-		"KW_NOT",
-		"KW_NIL",
-		"KW_THEN",
-		"KW_WHILE",
-		"BLOCK_KW_END",
-		"BLOCK_SEP_START",
-		"SEP_RB",
-		"SEP_LB",
-		"SEP_EOL",
-		"BLOCK_SEP_END",
-		"BLOCK_OP_START",
-		"OP_ADD",
-		"OP_SUB",
-		"OP_MUL",
-		"OP_DIV",
-		"OP_EQL",
-		"OP_NEQ",
-		"OP_LT",
-		"OP_GT",
-		"OP_LTE",
-		"OP_GTE",
-		"OP_ASGMT",
-		"BLOCK_OP_END",
-		"BLOCK_NUM_START",
-		"INTEGER",
-		"DOUBLE",
-		"DOUBLE_EXP",
-		"BLOCK_NUM_END",
-		"COMMENT",
-		"STRING",
-		"ERROR"
-	};
-
-	while(firstToken != NULL){
-		printf("TYPE: %s\n", typeToStr[firstToken->type]);
-		printf("LINE: %d\n", firstToken->line);
-		printf("------------\n");
-
-		firstToken = firstToken->tNext;
+void scannerGetToken(FILE *file, pToken *output){
+	scannerFSM(file, output);
+	if((*output)->type == ID){
+		// TODO: Kontrola, jestli ID je keyword
 	}
 }
 
-
-int scannerParse(char* input, pToken *output){
-	// Základní kostra FSM automatu, není hotový
-	
-	pToken currToken = malloc(sizeof(struct Token));
-	currToken->line = 1;
-	currToken->tNext = NULL;
-	currToken->type = UNKNOWN;
-
-	*output = currToken;
-
+void scannerFSM(FILE *file, pToken *output){
 	sState state = STATE_START;
+	sState nextState;
 
-	// TODO: Použít pointery funkcí, zmenší to kód
-	//void (*stateFunc)(char, pToken, void*, bool*) = *scannerFSM_START;
+	pToken token = malloc(sizeof(struct Token));
+	token->type = UNKNOWN;
+	*output = token;
+
+	bool isActive = true;
+	static int currChar = -10;
+	if(currChar == -10) currChar = getc(file);
 	
-	int pos = -1;
-	bool requestNextChar = true;
-	do{
-		if(requestNextChar) pos++;
-		
-		if(state == STATE_START && currToken->type != UNKNOWN){
-			pToken newToken = malloc(sizeof(struct Token));
-			newToken->line = currToken->line;
-			newToken->tNext = NULL;
-			newToken->type = UNKNOWN;
-			
-			currToken->tNext = newToken;
-			currToken = newToken;
+	while(isActive){
+		nextState = STATE_ERROR;
+		switch(state){
+			case STATE_START:
+				if(currChar == '!') state = STATE_NEQ;
+				else if(currChar == '>') nextState = STATE_GT;
+				else if(currChar == '<') nextState = STATE_LT;
+				else if(currChar == '=') nextState = STATE_ASSIGN;
+				else if(currChar == '+') nextState = STATE_ADD;
+				else if(currChar == '-') nextState = STATE_SUB;
+				else if(currChar == '*') nextState = STATE_MUL;
+				else if(currChar == '/') nextState = STATE_DIV;
+				else if(currChar == '#') nextState = STATE_LCMNT;
+				else if(currChar == '(') nextState = STATE_LBR;
+				else if(currChar == ')') nextState = STATE_RBR;
+				else if(currChar == '"') nextState = STATE_STR;
+				else if(currChar == '0') nextState = STATE_INT0;
+				else if(currChar == EOL) nextState = STATE_EOL;
+				else if(currChar == EOF) nextState = STATE_EOF;
+				else if(isdigit(currChar)) nextState = STATE_INT;
+				else if(islower(currChar) || currChar == '_') nextState = STATE_ID;
+				else if(isspace(currChar)) nextState = STATE_START;
+				break;
+			case STATE_ADD:
+				token->type = OP_ADD;
+				break;
+			case STATE_SUB:
+				token->type = OP_SUB;
+				break;
+			case STATE_MUL:
+				token->type = OP_MUL;
+				break;
+			case STATE_DIV:
+				token->type = OP_DIV;
+				break;
+			case STATE_GTE:
+				token->type = OP_GTE;
+				break;
+			case STATE_LTE:
+				token->type = OP_LTE;
+				break;
+			case STATE_EQL:
+				token->type = OP_EQL;
+				break;
+			case STATE_NEQ2:
+				token->type = OP_NEQ;
+				break;
+			case STATE_LBR:
+				token->type = SEP_LB;
+				break;
+			case STATE_RBR:
+				token->type = SEP_RB;
+				break;
+			case STATE_EOF:
+				token->type = SEP_EOF;
+				break;
+			case STATE_NEQ:
+				if(currChar == '=') nextState = STATE_NEQ2;
+				break;
+			case STATE_GT:
+				if(currChar == '=') nextState = STATE_GTE;
+				else token->type = OP_GT;
+				break;
+			case STATE_LT:
+				if(currChar == '=') nextState = STATE_LTE;
+				else token->type = OP_LT;
+				break;
+			case STATE_ASSIGN:
+				if(currChar == '=') nextState = STATE_EQL;
+				else token->type = OP_ASGMT;
+				break;
+			case STATE_EOL:
+				token->type = SEP_EOL;
+				break; // TODO: Block comment
+			case STATE_LCMNT:
+				if(currChar == EOL) nextState = STATE_EOL;
+				else nextState = STATE_LCMNT;
+				break;
+			case STATE_ID:
+				if(currChar == '?' || currChar == '!') nextState = STATE_ID_FN;
+				else if(isalpha(currChar) || isdigit(currChar) || currChar == '_') 
+					nextState = STATE_ID;
+				else token->type = ID;
+				break;
+			case STATE_ID_FN:
+				token->type = ID_FN;
+				break;
+			case STATE_STR:
+				if(currChar == '\\') nextState = STATE_STR2;
+				else if(currChar == '"') nextState = STATE_STR4;
+				else if(currChar >= 32) nextState = STATE_STR;
+				break;
+			case STATE_STR2:
+				if(currChar == 'x') nextState = STATE_STR3;
+				else if(currChar == '"' || currChar == 'n' || currChar == 't' ||
+						currChar == 's' || currChar == '\\')
+					nextState = STATE_STR;
+				break;
+			case STATE_STR3:
+				if(isdigit(currChar) || 
+				  (tolower(currChar) >= 'a' && tolower(currChar) <= 'f'))
+					nextState = STATE_STR;
+				break;
+			case STATE_STR4:
+				token->type = STRING;
+				break;
+			case STATE_INT0:
+				if(tolower(currChar) == 'e') nextState = STATE_EXP;
+				else if(currChar == '.') nextState = STATE_DBLE;
+				else token->type = INTEGER;
+				break;
+			case STATE_INT:
+				if(isdigit(currChar)) nextState = STATE_INT;
+				else if(currChar == '.') nextState = STATE_DBLE;
+				else if(tolower(currChar) == 'e') nextState = STATE_EXP;
+				else token->type = INTEGER;
+				break;
+			case STATE_DBLE:
+				if(isdigit(currChar)) nextState = STATE_DBLE2;
+				break;
+			case STATE_DBLE2:
+				if(isdigit(currChar)) nextState = STATE_DBLE2;
+				else if(tolower(currChar) == 'e') nextState = STATE_EXP;
+				else token->type = DOUBLE;
+				break;
+			case STATE_EXP:
+				if(isdigit(currChar)) nextState = STATE_EXP3;
+				else if(currChar == '+' || currChar == '-') nextState = STATE_EXP2;
+				break;
+			case STATE_EXP2:
+				if(isdigit(currChar)) nextState = STATE_EXP3;
+				break;
+			case STATE_EXP3:
+				if(isdigit(currChar)) nextState = STATE_EXP3;
+				else token->type = DOUBLE_EXP;
+				break;
 		}
 
-		requestNextChar = true;
-		//(*stateFunc)(input[pos], token, stateFunc, &requestNextChar);
-		if(state == STATE_START) scannerFSM_START(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_EQL) scannerFSM_EQL(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_LT) scannerFSM_LT(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_GT) scannerFSM_GT(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_NEQ) scannerFSM_NEQ(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_LCOMNT) scannerFSM_LCOMNT(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_INT0) scannerFSM_INT0(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_INT) scannerFSM_INT(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_DBLE) scannerFSM_DBLE(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_DBLE2) scannerFSM_DBLE2(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_EXP) scannerFSM_EXP(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_EXP2) scannerFSM_EXP2(input[pos], currToken, &state, &requestNextChar);
-		else if(state == STATE_EXP3) scannerFSM_EXP3(input[pos], currToken, &state, &requestNextChar);
-		else{
-			// TODO: Ošetřit chybu, neznámý stav FSM
-			printf("Chyba lexikalniho analyzatoru, FSM se dostal do neznameho stavu");
+		if(nextState == STATE_ERROR){
+			isActive = false;
+		}else if(token->type != UNKNOWN){
+			isActive = false;
+		}else{
+			if(currChar != EOF) currChar = getc(file);
+			state = nextState;
 		}
-
-	}while(input[pos] != '\0' && input[pos] != EOF);
-	
-	
-	return 0;
-}
-
-// OPERATOR '=', '==', nebo BLOCK COMMENT
-void scannerFSM_EQL(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(input == '='){
-		token->type = OP_EQL;
-	}else if(input == 'b'){
-		// TODO: Možná zaačátek blokovýho commentu
-	}else{
-		token->type = OP_ASGMT;
-		*requestNextChar = false;
-	}
-
-	*nextState = STATE_START;
-}
-
-// OPERATOR < nebo <=
-void scannerFSM_LT(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(input == '='){
-		token->type = OP_LTE;
-	}else{
-		token->type = OP_LT;
-		*requestNextChar = false;
-	}
-
-	*nextState = STATE_START;
-}
-
-// OPERATOR > nebo >=
-void scannerFSM_GT(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(input == '='){
-		token->type = OP_GTE;
-	}else{
-		token->type = OP_GT;
-		*requestNextChar = false;
-	}
-	
-	*nextState = STATE_START;
-}
-
-// OPERATOR !=
-void scannerFSM_NEQ(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(input == '='){
-		token->type = OP_NEQ;
-	}else{
-		// TODO: ERROR, za ! musí být =
-		token->type = ERROR;
-		*requestNextChar = false;
-	}
-	
-	*nextState = STATE_START;
-}
-
-// Řádkový komentář
-void scannerFSM_LCOMNT(char input, pToken token, sState *nextState, bool *requestNextChar){
-	token->type = COMMENT;
-	if(input == '\n'){
-		*requestNextChar = false;
-		*nextState = STATE_START;
 	}
 }
 
-// Číslo začínající nulou
-// jako další znak je povolený jen 'e' a '.' (str. 3, pozn. 5 a 6 zadání)
-void scannerFSM_INT0(char input, pToken token, sState *nextState, bool *requestNextChar){
-	token->type = INTEGER;
-	if(isdigit(input)){
-		// TODO: ERROR, celé číslo nemůže začínat nulou
-		token->type = ERROR;
-		*nextState = STATE_START;
-	}else if(input == '.'){
-		token->type = DOUBLE;
-		*nextState = STATE_DBLE;
-	}else if(input == 'e' || input == 'E'){
-		token->type = DOUBLE_EXP;
-		*nextState = STATE_EXP;
-	}else{
-		*requestNextChar = false;
-		*nextState = STATE_START;
-	}
-}
+void scannerPrintType(pToken token){
+	char *type[] = {"UNKNOWN", 	//!< Výchozí typ
+	"ID", 		//!< Identifikátor funkce/proměnné
+	"ID_FN", 		//!< Identifikátor funkce
+	"KW_DEF",		//!< Keyword - DEF
+	"KW_DO",		//!< Keyword - DO
+	"KW_ELSE",	//!< Keyword - ELSE
+	"KW_END",		//!< Keyword - END
+	"KW_IF",		//!< Keyword - IF
+	"KW_NOT",		//!< Keyword - NOT
+	"KW_NIL",		//!< Keyword - NIL
+	"KW_THEN",	//!< Keyword - THEN
+	"KW_WHILE",	//!< Keyword - WHILE
+	"SEP_RB",		//!< Levá závorka
+	"SEP_LB",		//!< Pravá závorka
+	"SEP_EOL",	//!< Konec řádku
+	"SEP_EOF",	//!< Konec souboru
+	"OP_ADD",		//!< Matematika - Sčítání
+	"OP_SUB",		//!< Matematika - Krácení
+	"OP_MUL",		//!< Matematika - Násobení
+	"OP_DIV",		//!< Matematika - Dělení
+	"OP_EQL",		//!< Porovnání - Rovná se
+	"OP_NEQ",		//!< Porovnání - Nerovná se
+	"OP_LT",		//!< Porovnání - Menší
+	"OP_GT",		//!< Porovnání - Větší
+	"OP_LTE",		//!< Porovnání - Menší nebo se rovná
+	"OP_GTE",		//!< Porovnání - Větší nebo se rovná
+	"OP_ASGMT",	//!< Přiřazení
+	"INTEGER",	//!< Celé kladné číslo
+	"DOUBLE",		//!< Desetinné kladné číslo
+	"DOUBLE_EXP",	//!< Desetinné kladné číslo zapsané exponentem
+	"STRING",		//!< Řetězec znaků
+	"ERROR"};
 
-// Začítek celého čísla, může následovat tečka nebo exponent
-void scannerFSM_INT(char input, pToken token, sState *nextState, bool *requestNextChar){
-	token->type = INTEGER;
-	if(input == '.'){
-		token->type = DOUBLE;
-		*nextState = STATE_DBLE;
-	}else if(input == 'e' || input == 'E'){
-		token->type = DOUBLE_EXP;
-		*nextState = STATE_EXP;
-	}else if(!isdigit(input)){
-		*requestNextChar = false;
-		*nextState = STATE_START;
-	}
-}
-
-// Začátek desetinného čísla, kontrola jestli je za tečkou číslo
-void scannerFSM_DBLE(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(isdigit(input)){
-		*nextState = STATE_DBLE2;
-	}else{
-		// TODO: ERROR, po '.' musí být číslo
-		token->type = ERROR;
-		*nextState = STATE_START;
-	}
-}
-
-// Desetinné číslo
-void scannerFSM_DBLE2(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(input == 'e' || input == 'E'){
-		token->type = DOUBLE_EXP;
-		*nextState = STATE_EXP;
-	}else if(!isdigit(input)){
-		*requestNextChar = false;
-		*nextState = STATE_START;
-	}
-}
-
-// Začítek exponentu, kontrola přítomnosti + nebo - nebo čísla
-void scannerFSM_EXP(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(input == '+' || input == '-'){
-		*nextState = STATE_EXP2;
-	}else if(isdigit(input)){
-		*nextState = STATE_EXP3;
-	}else{
-		// TODO: ERROR, po 'e' musí být číslo
-		token->type = ERROR;
-		*nextState = STATE_START;
-	}
-}
-
-// Pokud je za exponentem + nebo -, zkrontrolovat jestli následuje číslo
-void scannerFSM_EXP2(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(isdigit(input)){
-		*nextState = STATE_EXP3;
-	}else{
-		// TODO: ERROR, po 'e' musí být číslo
-		token->type = ERROR;
-		*nextState = STATE_START;
-	}
-}
-
-// Desetinné číslo s exponentem
-void scannerFSM_EXP3(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(!isdigit(input)){
-		*requestNextChar = false;
-		*nextState = STATE_START;
-	}
-}
-
-
-void scannerFSM_START(char input, pToken token, sState *nextState, bool *requestNextChar){
-	if(input == '(') token->type = SEP_LB;
-	else if(input == ')') token->type = SEP_RB;
-	else if(input == '+') token->type = OP_ADD;
-	else if(input == '-') token->type = OP_SUB;
-	else if(input == '*') token->type = OP_MUL;
-	else if(input == '/') token->type = OP_DIV;
-	else if(input == '=') *nextState = STATE_EQL;
-	else if(input == '<') *nextState = STATE_LT;
-	else if(input == '>') *nextState = STATE_GT;
-	else if(input == '!') *nextState = STATE_NEQ;
-	else if(input == '"') printf("String not implemented\n");
-	else if(input == '#') *nextState = STATE_LCOMNT;
-	else if(input == '0') *nextState = STATE_INT0;
-	else if(isdigit(input)) *nextState = STATE_INT;
-	else if(islower(input) || input == '_') 
-		printf("Identifiers not implemented\n"); // KEYWORD nebo IDENTIFIER
-	else if(input == '\n'){
-		token->type = SEP_EOL;
-		token->line++;
-	}
-	else if(!isspace(input)){
-		// Neznámý znak, nejspíš chyba
-		// TODO: Ošetřit chybu
-		token->type = ERROR;
-	}
+	printf(type[token->type]);
 }

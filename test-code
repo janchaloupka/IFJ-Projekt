@@ -1,0 +1,4 @@
+ahoj = 1
+if ahoj <= 3 then
+	ahoj = "foo" # Toto je comment
+end
