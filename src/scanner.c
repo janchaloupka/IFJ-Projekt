@@ -1,48 +1,79 @@
 #include "scanner.h"
 
-char const *keywords[] = {
-	"def",
-	"do",
-	"else",
-	"end",
-	"if",
-	"not",
-	"nil",
-	"then",
-	"while"
-};
+int scannerGetTokenList(pToken *firstToken, FILE *file){
+	pToken prevToken = NULL;
+	
+	while(prevToken == NULL || prevToken->type != T_EOF){
+		pToken newToken;
+		int ret = scannerGetToken(&newToken, file);
+		
+		if(prevToken == NULL) *firstToken = newToken;
+		else prevToken->nextToken = newToken;
+		newToken->prevToken = prevToken;
+		prevToken = newToken;
 
-void scannerGetToken(FILE *file, pToken *output){
-	//do{
-		scannerFSM(file, output);
-	//}while((*output)->type == T_UNKNOWN);
-
-	if((*output)->type == T_ID){
-		// TODO: Kontrola, jestli ID je keyword
+		if(ret != 0){
+			scannerFreeTokenList(&prevToken);
+			return ret; // Nastala chyba v získání tokenu
+		}
 	}
+
+	return 0;
 }
 
-void scannerFSM(FILE *file, pToken *output){
+int scannerGetToken(pToken *token, FILE *file){
+	if(file == NULL) file = stdin;
+	if(token == NULL) return 99;
+	
+	*token = malloc(sizeof(struct Token));
+	(*token)->data = NULL;
+	(*token)->prevToken = NULL;
+	(*token)->nextToken = NULL;
+	
+	bool isError = false;
+	do{
+		free((*token)->data);
+		if(_scannerFSM(file, *token)) isError = true;
+	}while(	(isError && (*token)->type != T_EOF) || 
+			(*token)->type == T_UNKNOWN ||
+			(*token)->linePos == 0 );
+
+	_scannerIsKeyword(*token);
+
+	return isError ? 1 : 0;
+}
+
+int _scannerFSM(FILE *file, pToken token){
 	sState state = STATE_START;
 	sState nextState;
-
-	pToken token = malloc(sizeof(struct Token));
+	
 	token->type = T_UNKNOWN;
-	*output = token;
 
 	bool isActive = true;
-	static unsigned int lineNumber = 1;
-	static unsigned int linePos = 1;
+	static unsigned int linePos = 0;
+	static unsigned int colPos = 1;
 	static int currChar = -2;
-	if(currChar == -2) currChar = getc(file);
+	if(currChar == -2) currChar = EOL;
+
+	token->colPos = colPos;
+	token->linePos = linePos;
 	
-	printf("\n#%u-%u\t", lineNumber, linePos);
+	unsigned int rawStrPos = 0;
+	unsigned int rawStrLength = STRING_CHUNK_LEN;
+	char *rawStr = malloc(sizeof(char)*rawStrLength);
 
 	while(isActive){
-		nextState = STATE_ERROR;
+		if(rawStrPos >= rawStrLength){
+			rawStrLength += STRING_CHUNK_LEN;
+			rawStr = realloc(rawStr, sizeof(char)*rawStrLength);
+		}
+		rawStr[rawStrPos] = currChar;
+		rawStrPos++;
+		nextState = STATE_NULL;
+		
 		switch(state){
 			case STATE_START:
-				if(currChar == '!') state = STATE_NEQ;
+				if(currChar == '!') nextState = STATE_NEQ;
 				else if(currChar == '>') nextState = STATE_GT;
 				else if(currChar == '<') nextState = STATE_LT;
 				else if(currChar == '=') nextState = STATE_ASSIGN;
@@ -60,7 +91,8 @@ void scannerFSM(FILE *file, pToken *output){
 				else if(currChar == EOF) nextState = STATE_EOF;
 				else if(isdigit(currChar)) nextState = STATE_INT;
 				else if(islower(currChar) || currChar == '_') nextState = STATE_ID;
-				else if(isspace(currChar)) nextState = STATE_START;
+				else if(isspace(currChar)) nextState = STATE_SPACE;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_LBR:
 				token->type = T_LBRCKT;
@@ -72,12 +104,16 @@ void scannerFSM(FILE *file, pToken *output){
 				token->type = T_COMMA;
 				break;
 			case STATE_EOL:
-				token->type = T_EOL;
-				lineNumber++;
-				linePos = 1;
-				break; // TODO: Block comment
+				if(currChar == '=') nextState = STATE_BCMT;
+				else token->type = T_EOL;
+				linePos++;
+				colPos = 1;
+				break;
 			case STATE_EOF:
 				token->type = T_EOF;
+				break;
+			case STATE_SPACE:
+				if(isspace(currChar) && currChar != EOL) nextState = STATE_SPACE;
 				break;
 			// Expr
 			case STATE_ADD:
@@ -111,6 +147,7 @@ void scannerFSM(FILE *file, pToken *output){
 				break;
 			case STATE_NEQ:
 				if(currChar == '=') nextState = STATE_NEQ2;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_NEQ2:
 				token->type = T_NEQ;
@@ -118,11 +155,6 @@ void scannerFSM(FILE *file, pToken *output){
 			case STATE_ASSIGN:
 				if(currChar == '=') nextState = STATE_EQL;
 				else token->type = T_ASSIGN;
-				break;
-			// Comment
-			case STATE_LCMNT:
-				if(currChar == EOL) nextState = STATE_EOL;
-				else nextState = STATE_LCMNT;
 				break;
 			// Id
 			case STATE_ID:
@@ -139,17 +171,20 @@ void scannerFSM(FILE *file, pToken *output){
 				if(currChar == '\\') nextState = STATE_STR2;
 				else if(currChar == '"') nextState = STATE_STR4;
 				else if(currChar >= 32) nextState = STATE_STR;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_STR2:
 				if(currChar == 'x') nextState = STATE_STR3;
 				else if(currChar == '"' || currChar == 'n' || currChar == 't' ||
 						currChar == 's' || currChar == '\\')
 					nextState = STATE_STR;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_STR3:
 				if(isdigit(currChar) || 
 				  (tolower(currChar) >= 'a' && tolower(currChar) <= 'f'))
 					nextState = STATE_STR;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_STR4:
 				token->type = T_STRING;
@@ -159,6 +194,7 @@ void scannerFSM(FILE *file, pToken *output){
 				if(tolower(currChar) == 'e') nextState = STATE_EXP;
 				else if(currChar == '.') nextState = STATE_DBLE;
 				else if(!isdigit(currChar)) token->type = T_INTEGER;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_INT:
 				if(isdigit(currChar)) nextState = STATE_INT;
@@ -177,110 +213,304 @@ void scannerFSM(FILE *file, pToken *output){
 			case STATE_EXP:
 				if(isdigit(currChar)) nextState = STATE_EXP3;
 				else if(currChar == '+' || currChar == '-') nextState = STATE_EXP2;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_EXP2:
 				if(isdigit(currChar)) nextState = STATE_EXP3;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_EXP3:
 				if(isdigit(currChar)) nextState = STATE_EXP3;
 				else token->type = T_DOUBLE_E;
 				break;
+			// Comment
+			case STATE_LCMNT:
+				if(currChar != EOL && currChar != EOF) nextState = STATE_LCMNT;
+				break;
+			case STATE_BCMT:
+				if(currChar == 'b') nextState = STATE_BCMT2;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_BCMT2:
+				if(currChar == 'e') nextState = STATE_BCMT3;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_BCMT3:
+				if(currChar == 'g') nextState = STATE_BCMT4;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_BCMT4:
+				if(currChar == 'i') nextState = STATE_BCMT5;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_BCMT5:
+				if(currChar == 'n') nextState = STATE_BCMT6;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_BCMT6:
+				if(currChar == EOL) nextState = STATE_BCMT8;
+				else if(isspace(currChar)) nextState = STATE_BCMT7;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_BCMT7:
+				if(currChar == EOL) nextState = STATE_BCMT8;
+				else if(currChar == EOF) nextState = STATE_ERROR;
+				else nextState = STATE_BCMT7;
+				break;
+			case STATE_BCMT8:
+				if(currChar == '=') nextState = STATE_BCMT9;
+				else if(currChar == EOL) nextState = STATE_BCMT8;
+				else if(currChar == EOF) nextState = STATE_ERROR;
+				else nextState = STATE_BCMT7;
+				linePos++;
+				colPos = 1;
+				break;
+			case STATE_BCMT9:
+				if(currChar == 'e') nextState = STATE_BCMT10;
+				else if(currChar == EOL) nextState = STATE_BCMT8;
+				else if(currChar == EOF) nextState = STATE_ERROR;
+				else nextState = STATE_BCMT7;
+				break;
+			case STATE_BCMT10:
+				if(currChar == 'n') nextState = STATE_BCMT11;
+				else if(currChar == EOL) nextState = STATE_BCMT8;
+				else if(currChar == EOF) nextState = STATE_ERROR;
+				else nextState = STATE_BCMT7;
+				break;
+			case STATE_BCMT11:
+				if(currChar == 'd') nextState = STATE_BCMT12;
+				else if(currChar == EOL) nextState = STATE_BCMT8;
+				else if(currChar == EOF) nextState = STATE_ERROR;
+				else nextState = STATE_BCMT7;
+				break;
+			case STATE_BCMT12:
+				if(isspace(currChar) && currChar != EOL) nextState = STATE_BCMT13;
+				else if(currChar != EOF && currChar != EOL) nextState = STATE_BCMT7;
+				break;
+			case STATE_BCMT13:
+				if(currChar != EOF && currChar != EOL) nextState = STATE_BCMT13;
+				break;
+			default:
+				// TODO: Něco udělat když se dostaneme do divnýho stavu
+				break;
 		}
 
-		if(token->type != T_UNKNOWN){
-			isActive = false;
-			return;
+		if(token->type != T_UNKNOWN || nextState == STATE_NULL){
+			break; 
 		}else if(nextState == STATE_ERROR){
+			_scannerHandleError(state, currChar, linePos, colPos);
+			if(state != STATE_START) break;
 			isActive = false;
-			scannerHandleError(state, currChar, lineNumber, linePos);
 		}
 		
 		if(currChar != EOF){
 			currChar = getc(file);
-			linePos++;
+			colPos++;
 		}
 		state = nextState;
 	}
+
+	// Rozhodování, jestli se má string zachovat nebo ne
+	switch(state){
+		case STATE_STR4:
+		case STATE_INT:
+		case STATE_INT0:
+		case STATE_DBLE2:
+		case STATE_EXP3:
+		case STATE_ID:
+		case STATE_ID_FN:
+			rawStr[rawStrPos-1] = '\0';
+			rawStr = realloc(rawStr, rawStrPos);
+			token->data = rawStr;
+			break;
+		default:
+			free(rawStr);
+			break;
+	}
+
+	return nextState == STATE_ERROR ? 1 : 0;
 }
 
-bool scannerFoundError = false;
+bool _scannerIsKeyword(pToken token){
+	if(token->type != T_ID) return false;
 
-void scannerHandleError(tType state, char currChar, unsigned int line, unsigned int pos){
-	fprintf(stderr, "[SCANNER] Error on line %d:%d - ", line, pos);
+	tType newType = token->type;
+	if(strcmp((char*)token->data, "def") == 0) newType = T_DEF;
+	else if(strcmp((char*)token->data, "do") == 0) newType = T_DO;
+	else if(strcmp((char*)token->data, "else") == 0) newType = T_ELSE;
+	else if(strcmp((char*)token->data, "end") == 0) newType = T_END;
+	else if(strcmp((char*)token->data, "if") == 0) newType = T_IF;
+	else if(strcmp((char*)token->data, "not") == 0) newType = T_NOT;
+	else if(strcmp((char*)token->data, "nil") == 0) newType = T_NIL;
+	else if(strcmp((char*)token->data, "then") == 0) newType = T_THEN;
+	else if(strcmp((char*)token->data, "while") == 0) newType = T_WHILE;
+
+	if(token->type != newType){
+		free(token->data);
+		token->data = NULL;
+		token->type = newType;
+		return true;
+	}
+
+	return false;
+}
+
+void scannerFreeToken(pToken *token){
+	if(token == NULL || *token == NULL) return;
+
+	switch((*token)->type){
+		case T_STRING:
+		case T_INTEGER:
+		case T_DOUBLE:
+		case T_DOUBLE_E:
+		case T_ID:
+		case T_IDFN:
+			free((*token)->data);
+			break;
+		default:
+			break;
+	}
+
+	free(*token);
+	*token = NULL;
+}
+
+void scannerFreeTokenList(pToken *token){
+	if(token == NULL || *token == NULL) return;
+
+	while((*token)->nextToken != NULL){
+		*token = (*token)->nextToken;
+	}
+
+	while(*token != NULL){
+		pToken prev = (*token)->prevToken;
+		scannerFreeToken(token);
+		*token = prev;
+	}
+}
+
+void _scannerHandleError(sState state, char currChar, unsigned int line, unsigned int col){
+	fprintf(stderr, "[SCANNER] Error on line %d:%d - ", line, col);
 	
 	switch(state){
 		case STATE_STR:
-			fprintf(stderr, "Expected ASCII char >= 0x20 in string, got");
+			fprintf(stderr, "Expected printable ASCII char (>= 0x20) in string, found ");
 			break;
 		case STATE_STR2:
-			fprintf(stderr, "Expected '\"','n','t','s','x' or '\\', got ");
+			fprintf(stderr, "Expected '\"','n','t','s','x' or '\\', found ");
 			break;
 		case STATE_STR3:
-			fprintf(stderr, "Expected a-f or digit after 'x', got ");
+			fprintf(stderr, "Expected a-f or digit after 'x', found ");
 			break;
 		case STATE_INT0:
-			fprintf(stderr, "Integer cannot start with '0', found ");
+			fprintf(stderr, "Integer cannot start with '0', found digit ");
 			break;
 		case STATE_DBLE:
-			fprintf(stderr, "Expected digit after decimal point, got ");
+			fprintf(stderr, "Expected digit after decimal point, found ");
 			break;
 		case STATE_EXP:
-			fprintf(stderr, "Expected digit or sign in exponent, got ");
+			fprintf(stderr, "Expected digit or sign in exponent, found ");
 			break;
 		case STATE_EXP2:
-			fprintf(stderr, "Expected digit after sign in exponent, got ");
+			fprintf(stderr, "Expected digit after sign in exponent, found ");
 			break;
 		case STATE_NEQ:
-			fprintf(stderr, "; Expected '=' after '!', got ");
+			fprintf(stderr, "Expected '=' after '!', found ");
+			break;
+		case STATE_BCMT7:
+		case STATE_BCMT8:
+		case STATE_BCMT9:
+		case STATE_BCMT10:
+		case STATE_BCMT11:
+			fprintf(stderr, "Expected \"=end\", found ");
 			break;
 		default:
 			fprintf(stderr, "Unexpected ");
 			break;
 	}
-
-	fprintf(stderr, "'%c' (0x%x)", currChar, currChar);
-	if((int)state == (int)STATE_INT0) fprintf(stderr, " after '0'");
-	fprintf(stderr, "\n");
 	
-	scannerFoundError = true;
+	if(currChar >= 0x20){
+		fprintf(stderr, "'%c'", currChar);
+	}else if(currChar == EOL || currChar == '\r'){
+		fprintf(stderr, "EOL");
+	}else if(currChar == EOF){
+		fprintf(stderr, "EOF");
+	}else{
+		fprintf(stderr, "0x%x", currChar);
+	}
+	
+	if(state == STATE_INT0) 
+		fprintf(stderr, " after '0'");
+	else if(state >= STATE_BCMT7 && state <= STATE_BCMT11) 
+		fprintf(stderr, "; Reached end of file but block comment is still opened");
+	fprintf(stderr, "\n");
 }
 
 void scannerPrintToken(pToken token){
-	char *type[] = {
-		"UNKNOWN", 	//!< Výchozí typ
-		"ID", 		//!< Identifikátor funkce/proměnné
-		"IDFN", 	//!< Identifikátor funkce
-		"DEF",		//!< Keyword - DEF
-		"DO",		//!< Keyword - DO
-		"ELSE",		//!< Keyword - ELSE
-		"END",		//!< Keyword - END
-		"IF",		//!< Keyword - IF
-		"NOT",		//!< Keyword - NOT
-		"NIL",		//!< Keyword - NIL
-		"THEN",		//!< Keyword - THEN
-		"WHILE",	//!< Keyword - WHILE
-		"RBRCKT",	//!< Levá závorka
-		"LBRCKT",	//!< Pravá závorka
-		"COMMA",	//!< Oddělovací čárka
-		"EOL",		//!< Konec řádku
-		"EOF",		//!< Konec souboru
-		"ADD",		//!< Matematika - Sčítání
-		"SUB",		//!< Matematika - Krácení
-		"MUL",		//!< Matematika - Násobení
-		"DIV",		//!< Matematika - Dělení
-		"EQL",		//!< Porovnání - Rovná se
-		"NEQ",		//!< Porovnání - Nerovná se
-		"LT",		//!< Porovnání - Menší
-		"GT",		//!< Porovnání - Větší
-		"LTE",		//!< Porovnání - Menší nebo se rovná
-		"GTE",		//!< Porovnání - Větší nebo se rovná
-		"ASSIGN",	//!< Přiřazení
-		"INTEGER",	//!< Celé kladné číslo
-		"DOUBLE",	//!< Desetinné kladné číslo
-		"DOUBLE_E",	//!< Desetinné kladné číslo zapsané exponentem
-		"STRING",	//!< Řetězec znaků
-		"ERROR"		//!< Speciální typ, při parsování tohoto úseku nastala chyba
-	};
+	if(token == NULL){
+		printf("pToken is NULL \n");
+		return;
+	}
 
-	printf(type[token->type]);
+	printf("#%d:%d\t", token->linePos, token->colPos);
+	
+	switch(token->type){
+		case T_UNKNOWN: printf("UNKNOWN"); break;
+		case T_ID: 		printf("ID"); break;
+		case T_IDFN: 	printf("IDFN"); break;
+		case T_DEF: 	printf("DEF"); break;
+		case T_DO: 		printf("DO"); break;
+		case T_ELSE: 	printf("ELSE"); break;
+		case T_END: 	printf("END"); break;
+		case T_IF: 		printf("IF"); break;
+		case T_NOT:	 	printf("NOT"); break;
+		case T_NIL: 	printf("NIL"); break;
+		case T_THEN:	printf("THEN"); break;
+		case T_WHILE: 	printf("WHILE"); break;
+		case T_RBRCKT: 	printf("RBRCKT"); break;
+		case T_LBRCKT: 	printf("LBRCKT"); break;
+		case T_COMMA: 	printf("COMMA"); break;
+		case T_EOL: 	printf("EOL"); break;
+		case T_EOF: 	printf("EOF"); break;
+		case T_ADD: 	printf("ADD"); break;
+		case T_SUB: 	printf("SUB"); break;
+		case T_MUL: 	printf("MUL"); break;
+		case T_DIV: 	printf("DIV"); break;
+		case T_EQL: 	printf("EQL"); break;
+		case T_NEQ: 	printf("NEQ"); break;
+		case T_LT: 		printf("LT"); break;
+		case T_GT: 		printf("GT"); break;
+		case T_LTE: 	printf("LTE"); break;
+		case T_GTE: 	printf("GTE"); break;
+		case T_ASSIGN: 	printf("ASSIGN"); break;
+		case T_INTEGER: printf("INTEGER"); break;
+		case T_DOUBLE: 	printf("DOUBLE"); break;
+		case T_DOUBLE_E:printf("DOUBLE_E"); break;
+		case T_STRING: 	printf("STRING"); break;
+	}
+	
+	switch(token->type){
+		case T_STRING:
+		case T_INTEGER:
+		case T_DOUBLE:
+		case T_DOUBLE_E:
+		case T_ID:
+		case T_IDFN:
+			printf("(%s)", (char*)token->data);
+			break;
+		default:
+			break;
+	}
+	printf("\n");
+}
+
+void scannerPrintTokenList(pToken token){
+	while(token->prevToken != NULL){
+		token = token->prevToken;
+	}
+
+	while(token->nextToken != NULL){
+		scannerPrintToken(token);
+		token = token->nextToken;
+	}
 }

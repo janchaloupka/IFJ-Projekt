@@ -57,3 +57,5 @@ compiler.exe*
 .DS_Store
 
 obj/
+
+*.tmp

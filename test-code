@@ -1,10 +1,12 @@
-ahoj = 1
-if ahoj<=3 then
-	ahoj = "foo" # Toto je comment
-	0.01
+print "Zadejte cislo pro vypocet faktorialu: "
+a = inputi
+if a < 0 then
+	print("\nFaktorial nelze spocitat\n")
+else
+	vysl = 1
+	while a > 0 do
+		vysl = vysl * a
+		a = a - 1
+	end
+	print "\nVysledek je:", vysl, "\n"
 end
-
-def foo!(a, b)
-	a + b
-end
-

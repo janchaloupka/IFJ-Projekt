@@ -2,11 +2,19 @@
 
 int main(int argc, char const *argv[])
 {
-	pToken token = NULL;
-	while(token == NULL || token->type != T_EOF){
-		scannerGetToken(stdin, &token);
-		printf("type: ");
-		scannerPrintToken(token);
+	if(argc > 1){
+		if(strcmp(argv[1], "j32") == 0) return janchDebug();
 	}
-	return scannerFoundError ? 1 : 0;
+
+	// Hlavní program
+	return 0;
+}
+ 
+int janchDebug(){
+	FILE *source = fopen("test-code", "r");
+	
+	pToken token = NULL;
+	scannerGetTokenList(&token, source);
+	scannerPrintTokenList(token);
+	return 0;
 }
