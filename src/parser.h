@@ -7,6 +7,7 @@
  * @date 2018-11-16
  */
 
+#pragma once
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
