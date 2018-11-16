@@ -1,12 +1,12 @@
-print "Zadejte cislo pro vypocet faktorialu: "
-a = inputi
+print! "Zadejte cislo pro vypocet faktorialu: "
+a = inputi!
 if a < 0 then
-	print("\nFaktorial nelze spocitat\n")
+	print!("\nFaktorial nelze spocitat\n")
 else
 	vysl = 1
 	while a > 0 do
 		vysl = vysl * a
 		a = a - 1
 	end
-	print "\nVysledek je:", vysl, "\n"
+	print! "\nVysledek je:", vysl, "\n"
 end

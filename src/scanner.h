@@ -58,6 +58,19 @@ typedef enum{
 	T_DOUBLE,	//!< Desetinné kladné číslo
 	T_DOUBLE_E,	//!< Desetinné kladné číslo zapsané exponentem
 	T_STRING,	//!< Řetězec znaků
+	N_PROG, 	//!< Neterminály
+	N_BODY,
+	N_NEWL,
+	N_NEWLN,
+	N_DEFUNC,
+	N_CALFUNC,
+	N_FUNC,
+	N_PARS,
+	N_PARSN,
+	N_DEFVAR,
+	N_VAR,
+	N_IF,
+	N_WHILE,
 } tType;
 
 
