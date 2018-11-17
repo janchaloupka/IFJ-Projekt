@@ -14,7 +14,7 @@
 #include <stdbool.h>
 #include "scanner.h"
 
-#define MAXSTACK 100                      /* maximální počet prvků v zásobníku */
+#define MAXSTACK 1000                      /* maximální počet prvků v zásobníku */
 
 /**
  * Pomocný zásobník 
@@ -53,7 +53,7 @@ bool parserCompare(tStack S, pToken token);
  * @param S Ukazatel na zásobník terminálů/neterminálů určených ke zpracování
  * @param token Momentálně zpracovávaný token
  */
-void parserExpand(tStack *S, pToken token);
+void parserExpand(tStack *S, pToken *token);
 
 /**
  * Inicializuje zásobník, na první místo vloží type N_PROG jakožto výchozí stav

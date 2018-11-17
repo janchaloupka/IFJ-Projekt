@@ -72,6 +72,7 @@ typedef enum{
 	N_VAR,
 	N_IF,
 	N_WHILE,
+	N_EXPR,
 } tType;
 
 
