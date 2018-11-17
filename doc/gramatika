@@ -3,6 +3,25 @@
 <prog>      -> <body> EOL <prog>
 <prog>      -> EOF
 
+//expression 
+<expr>      -> nil 
+<expr>      -> id 
+<expr>      -> integer 
+<expr>      -> string 
+<expr>      -> float 
+<expr>      -> not <expr> 
+<expr>      -> <expr> + <expr> 
+<expr>      -> <expr> - <expr> 
+<expr>      -> <expr> / <expr> 
+<expr>      -> <expr> * <expr> 
+<expr>      -> <expr> == <expr> 
+<expr>      -> <expr> != <expr> 
+<expr>      -> <expr> < <expr> 
+<expr>      -> <expr> > <expr> 
+<expr>      -> <expr> <= <expr> 
+<expr>      -> <expr> >= <expr> 
+<expr>      -> ( <expr> )
+
 //body
 <body>      -> ε
 <body>      -> <call_func> <new_line> <body>
