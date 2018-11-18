@@ -1,52 +1,62 @@
+//expression (useless pro LL tabulku)
+<expr>      -> <type>
+<expr_id>   -> id
+<expr_id>   -> <expr>
+<expr>      -> not <expr>
+<expr>      -> <expr> <expr_f>
+<expr>      -> ( <expr> )
+<expr_f>    -> + <expr> 
+<expr_f>    -> - <expr> 
+<expr_f>    -> / <expr> 
+<expr_f>    -> * <expr> 
+<expr_f>    -> == <expr> 
+<expr_f>    -> != <expr> 
+<expr_f>    -> < <expr> 
+<expr_f>    -> > <expr> 
+<expr_f>    -> <= <expr> 
+<expr_f>    -> >= <expr> 
+<expr_f>    -> ε 
+
+//body
+
+<body>      -> id <body_id> <new_line> <body>
+<body>      -> not <expr> <new_line> <body>     <-- Sice je to stejný pravidlo jako u <expr> ale nevím jak jinak to napsat
+<body>      -> <type> <expr_f> <new_line> <body>
+<body_id>   -> <expr_f>
+<body_id>   -> = <expr> 
+<body_id>   -> <func>
+<body_id>   -> ε
+
+// všechno níž by mělo být 100% dobře ---------------------------------
+
 //program 
-<prog>      -> <def_func> EOL <prog>
-<prog>      -> <body> EOL <prog>
+<prog>      -> <def_func> <new_line> <prog>
+<prog>      -> <body> <prog>
 <prog>      -> EOF
 
-//expression 
-<expr>      -> nil 
-<expr>      -> id 
-<expr>      -> integer 
-<expr>      -> string 
-<expr>      -> float 
-<expr>      -> not <expr> 
-<expr>      -> <expr> + <expr> 
-<expr>      -> <expr> - <expr> 
-<expr>      -> <expr> / <expr> 
-<expr>      -> <expr> * <expr> 
-<expr>      -> <expr> == <expr> 
-<expr>      -> <expr> != <expr> 
-<expr>      -> <expr> < <expr> 
-<expr>      -> <expr> > <expr> 
-<expr>      -> <expr> <= <expr> 
-<expr>      -> <expr> >= <expr> 
-<expr>      -> ( <expr> )
+//types
+<type>		-> nil
+<type>		-> integer
+<type>		-> float
+<type>		-> string
 
 //body
 <body>      -> ε
-<body>      -> <call_func> <new_line> <body>
-<body>      -> <expr> <new_line> <body>
 <body>      -> <if> <new_line> <body>
-<body>      -> <def_var> <new_line> <body>
 <body>      -> <while> <new_line> <body>
 <new_line>  -> EOL <new_line_n>
 <new_line_n>-> ε
 <new_line_n>-> <new_line>
 
 //function
-<def_func>  -> def fid ( <params> ) EOL <body> end
-<call_func> -> fid <func>
+<def_func>  -> def id ( <params> ) EOL <body> end
 <func>      -> ( <params> )
 <func>      -> <params>
-<params>    -> id<params_n>
+<params>    -> <type> <params_n>
+<params>    -> id <params_n>
 <params>    -> ε
-<params_n>  -> ,<params>
+<params_n>  -> , <params>
 <params_n>  -> ε
-
-//variables
-<def_var>   -> id = <var>
-<var>       -> <expr>
-<var>       -> <call_func>
 
 //statement
 <if>        -> if <expr> then EOL <body> else EOL <body> end
