@@ -14,6 +14,7 @@ int scannerGetTokenList(pToken *firstToken, FILE *file){
 
 		if(ret != 0){
 			scannerFreeTokenList(&prevToken);
+			*firstToken = NULL;
 			return ret; // Nastala chyba v získání tokenu
 		}
 	}
@@ -33,6 +34,7 @@ int scannerGetToken(pToken *token, FILE *file){
 	bool isError = false;
 	do{
 		free((*token)->data);
+		(*token)->data = NULL;
 		if(_scannerFSM(file, *token)) isError = true;
 	}while(	(isError && (*token)->type != T_EOF) || 
 			(*token)->type == T_UNKNOWN ||
@@ -204,6 +206,7 @@ int _scannerFSM(FILE *file, pToken token){
 				break;
 			case STATE_DBLE:
 				if(isdigit(currChar)) nextState = STATE_DBLE2;
+				else nextState = STATE_ERROR;
 				break;
 			case STATE_DBLE2:
 				if(isdigit(currChar)) nextState = STATE_DBLE2;
@@ -221,7 +224,7 @@ int _scannerFSM(FILE *file, pToken token){
 				break;
 			case STATE_EXP3:
 				if(isdigit(currChar)) nextState = STATE_EXP3;
-				else token->type = T_DOUBLE_E;
+				else token->type = T_DOUBLE;
 				break;
 			// Comment
 			case STATE_LCMNT:
@@ -362,7 +365,6 @@ void scannerFreeToken(pToken *token){
 		case T_STRING:
 		case T_INTEGER:
 		case T_DOUBLE:
-		case T_DOUBLE_E:
 		case T_ID:
 		case T_IDFN:
 			free((*token)->data);
@@ -397,7 +399,7 @@ void _scannerHandleError(sState state, char currChar, unsigned int line, unsigne
 			fprintf(stderr, "Expected printable ASCII char (>= 0x20) in string, found ");
 			break;
 		case STATE_STR2:
-			fprintf(stderr, "Expected '\"','n','t','s','x' or '\\', found ");
+			fprintf(stderr, "Expected '\"','n','t','s','x' or '\\' after '\\', found ");
 			break;
 		case STATE_STR3:
 			fprintf(stderr, "Expected a-f or digit after 'x', found ");
@@ -409,10 +411,10 @@ void _scannerHandleError(sState state, char currChar, unsigned int line, unsigne
 			fprintf(stderr, "Expected digit after decimal point, found ");
 			break;
 		case STATE_EXP:
-			fprintf(stderr, "Expected digit or sign in exponent, found ");
+			fprintf(stderr, "Expected digit or +,- sign in exponent, found ");
 			break;
 		case STATE_EXP2:
-			fprintf(stderr, "Expected digit after sign in exponent, found ");
+			fprintf(stderr, "Expected digit after +,- sign in exponent, found ");
 			break;
 		case STATE_NEQ:
 			fprintf(stderr, "Expected '=' after '!', found ");
@@ -485,7 +487,6 @@ void scannerPrintToken(pToken token){
 		case T_ASSIGN: 	printf("ASSIGN"); break;
 		case T_INTEGER: printf("INTEGER"); break;
 		case T_DOUBLE: 	printf("DOUBLE"); break;
-		case T_DOUBLE_E:printf("DOUBLE_E"); break;
 		case T_STRING: 	printf("STRING"); break;
 	}
 	
@@ -493,7 +494,6 @@ void scannerPrintToken(pToken token){
 		case T_STRING:
 		case T_INTEGER:
 		case T_DOUBLE:
-		case T_DOUBLE_E:
 		case T_ID:
 		case T_IDFN:
 			printf("(%s)", (char*)token->data);
@@ -505,6 +505,11 @@ void scannerPrintToken(pToken token){
 }
 
 void scannerPrintTokenList(pToken token){
+	if(token == NULL){
+		printf("pToken is NULL \n");
+		return;
+	}
+
 	while(token->prevToken != NULL){
 		token = token->prevToken;
 	}

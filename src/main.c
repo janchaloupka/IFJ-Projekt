@@ -28,5 +28,6 @@ int janchDebug(){
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);
 	scannerPrintTokenList(token);
+	fclose(source);
 	return 0;
 }
