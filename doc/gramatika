@@ -1,28 +1,27 @@
 //expression (useless pro LL tabulku)
 <expr>      -> <type>
-<expr_id>   -> id
-<expr_id>   -> <expr>
 <expr>      -> not <expr>
-<expr>      -> <expr> <expr_f>
+<expr>      -> <expr> <expr_o>
 <expr>      -> ( <expr> )
-<expr_f>    -> + <expr> 
-<expr_f>    -> - <expr> 
-<expr_f>    -> / <expr> 
-<expr_f>    -> * <expr> 
-<expr_f>    -> == <expr> 
-<expr_f>    -> != <expr> 
-<expr_f>    -> < <expr> 
-<expr_f>    -> > <expr> 
-<expr_f>    -> <= <expr> 
-<expr_f>    -> >= <expr> 
-<expr_f>    -> ε 
+<expr_id>   -> id <expr_o>
+<expr_id>   -> <expr>
+<expr_o>    -> + <expr_id> 
+<expr_o>    -> - <expr_id> 
+<expr_o>    -> / <expr_id> 
+<expr_o>    -> * <expr_id> 
+<expr_o>    -> == <expr_id> 
+<expr_o>    -> != <expr_id> 
+<expr_o>    -> < <expr_id> 
+<expr_o>    -> > <expr_id> 
+<expr_o>    -> <= <expr_id> 
+<expr_o>    -> >= <expr_id> 
+<expr_o>    -> ε 
 
 //body
 
 <body>      -> id <body_id> <new_line> <body>
-<body>      -> not <expr> <new_line> <body>     <-- Sice je to stejný pravidlo jako u <expr> ale nevím jak jinak to napsat
-<body>      -> <type> <expr_f> <new_line> <body>
-<body_id>   -> <expr_f>
+<body>      -> <expr> <new_line> <body>
+<body_id>   -> <expr_o>
 <body_id>   -> = <expr> 
 <body_id>   -> <func>
 <body_id>   -> ε
