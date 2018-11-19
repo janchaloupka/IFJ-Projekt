@@ -187,6 +187,14 @@ void scannerFreeTokenList(pToken *token);
 
 
 /**
+ * Vrátí string pro výpis typu tokenu
+ * 
+ * @param type Typ tokenu
+ * @return const char* Název typu
+ */
+const char *scannerTypeToString(tType type);
+
+/**
  * Vypíše informace o tokenu na stdin
  * 
  * @param token Token, který má být vypsán

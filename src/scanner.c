@@ -448,6 +448,42 @@ void _scannerHandleError(sState state, char currChar, unsigned int line, unsigne
 	fprintf(stderr, "\n");
 }
 
+const char *scannerTypeToString(tType type){
+	switch(type){
+		case T_ID: 		return "ID"; break;
+		case T_IDFN: 	return "IDFN"; break;
+		case T_DEF: 	return "DEF"; break;
+		case T_DO: 		return "DO"; break;
+		case T_ELSE: 	return "ELSE"; break;
+		case T_END: 	return "END"; break;
+		case T_IF: 		return "IF"; break;
+		case T_NOT:	 	return "NOT"; break;
+		case T_NIL: 	return "NIL"; break;
+		case T_THEN:	return "THEN"; break;
+		case T_WHILE: 	return "WHILE"; break;
+		case T_RBRCKT: 	return "RBRCKT"; break;
+		case T_LBRCKT: 	return "LBRCKT"; break;
+		case T_COMMA: 	return "COMMA"; break;
+		case T_EOL: 	return "EOL"; break;
+		case T_EOF: 	return "EOF"; break;
+		case T_ADD: 	return "ADD"; break;
+		case T_SUB: 	return "SUB"; break;
+		case T_MUL: 	return "MUL"; break;
+		case T_DIV: 	return "DIV"; break;
+		case T_EQL: 	return "EQL"; break;
+		case T_NEQ: 	return "NEQ"; break;
+		case T_LT: 		return "LT"; break;
+		case T_GT: 		return "GT"; break;
+		case T_LTE: 	return "LTE"; break;
+		case T_GTE: 	return "GTE"; break;
+		case T_ASSIGN: 	return "ASSIGN"; break;
+		case T_INTEGER: return "INTEGER"; break;
+		case T_FLOAT: 	return "DOUBLE"; break;
+		case T_STRING: 	return "STRING"; break;
+		default: return "UNKNOWN"; break;
+	}
+}
+
 void scannerPrintToken(pToken token){
 	if(token == NULL){
 		printf("pToken is NULL \n");
@@ -456,39 +492,7 @@ void scannerPrintToken(pToken token){
 
 	printf("#%d:%d\t", token->linePos, token->colPos);
 	
-	switch(token->type){
-		case T_ID: 		printf("ID"); break;
-		case T_IDFN: 	printf("IDFN"); break;
-		case T_DEF: 	printf("DEF"); break;
-		case T_DO: 		printf("DO"); break;
-		case T_ELSE: 	printf("ELSE"); break;
-		case T_END: 	printf("END"); break;
-		case T_IF: 		printf("IF"); break;
-		case T_NOT:	 	printf("NOT"); break;
-		case T_NIL: 	printf("NIL"); break;
-		case T_THEN:	printf("THEN"); break;
-		case T_WHILE: 	printf("WHILE"); break;
-		case T_RBRCKT: 	printf("RBRCKT"); break;
-		case T_LBRCKT: 	printf("LBRCKT"); break;
-		case T_COMMA: 	printf("COMMA"); break;
-		case T_EOL: 	printf("EOL"); break;
-		case T_EOF: 	printf("EOF"); break;
-		case T_ADD: 	printf("ADD"); break;
-		case T_SUB: 	printf("SUB"); break;
-		case T_MUL: 	printf("MUL"); break;
-		case T_DIV: 	printf("DIV"); break;
-		case T_EQL: 	printf("EQL"); break;
-		case T_NEQ: 	printf("NEQ"); break;
-		case T_LT: 		printf("LT"); break;
-		case T_GT: 		printf("GT"); break;
-		case T_LTE: 	printf("LTE"); break;
-		case T_GTE: 	printf("GTE"); break;
-		case T_ASSIGN: 	printf("ASSIGN"); break;
-		case T_INTEGER: printf("INTEGER"); break;
-		case T_FLOAT: 	printf("DOUBLE"); break;
-		case T_STRING: 	printf("STRING"); break;
-		default: printf("UNKNOWN"); break;
-	}
+	printf(scannerTypeToString(token->type));
 	
 	switch(token->type){
 		case T_STRING:
