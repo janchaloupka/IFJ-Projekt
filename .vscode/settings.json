@@ -27,6 +27,7 @@
 	},
 	"files.associations": {
 		"scanner.h": "c",
-		"main.h": "c"
+		"main.h": "c",
+		"parser.h": "c"
 	}
 }

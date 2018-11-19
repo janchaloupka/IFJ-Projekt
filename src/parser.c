@@ -6,6 +6,8 @@ void parser(pToken *List){
 
 	bool correct = true;
 
+	const char *wrong = NULL;
+
 	tStack S;
 	parserStackInit(&S);
 
@@ -22,7 +24,8 @@ void parser(pToken *List){
 		}
 
 		if(!correct){
-			fprintf(stderr, "Chyba: Neočekávaný symbol!");
+			wrong = scannerTypeToString(S.a[S.top]);
+			fprintf(stderr, "Chyba: %u. řádek, očekávaný symbol: %s\n", token->linePos, wrong);
 			return;
 		}
 	}
@@ -34,254 +37,135 @@ bool parserCompare(tStack S, pToken token){
 
 void parserExpand(tStack *S, pToken *token, bool *correct){
 	if(S->a[S->last] == N_PROG){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_NOT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_IF:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_WHILE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_EOL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_BODY);
-				break;
-			case T_DEF:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_DEFUNC);
-				break;
-			case T_EOF:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_EOF);
-				break;
-			default:
-				*correct = false;
-				break;
+		if((*token)->type == T_ID ||
+		(*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_NOT ||
+		(*token)->type == T_LBRCKT ||
+		(*token)->type == T_IF ||
+		(*token)->type == T_WHILE ||
+		(*token)->type == T_EOL){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_PROG);
+			parserStackPush(&(*S), N_BODY);
 		}
+
+		else if((*token)->type == T_DEF){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_PROG);
+			parserStackPush(&(*S), T_EOL);
+			parserStackPush(&(*S), N_DEFUNC);
+		}
+
+		else if((*token)->type == T_EOF){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), T_EOF);
+		}
+		
+		else *correct = false;
 	}
 
 	else if(S->a[S->last] == N_BODY){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_BODY_ID);
-				parserStackPush(&(*S), T_ID);
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_NOT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_END:
-				parserStackPop(&(*S));
-				break;
-			case T_ELSE:
-				parserStackPop(&(*S));
-				break;
-			case T_IF:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_IF);
-				break;
-			case T_WHILE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_WHILE);
-				break;
-			case T_EOL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				break;
-			default:
-				parserStackPop(&(*S));
-				break;
+		parserStackPop(&(*S));
+
+		if((*token)->type == T_ID){
+			parserStackPush(&(*S), N_BODY);
+			parserStackPush(&(*S), T_EOL);
+			parserStackPush(&(*S), N_BODY_ID);
+			parserStackPush(&(*S), T_ID);
+		}
+
+		else if((*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_NOT ||
+		(*token)->type == T_LBRCKT){
+			parserStackPush(&(*S), N_BODY);
+			parserStackPush(&(*S), T_EOL);
+			parserStackPush(&(*S), N_EXPR);
+		}
+
+		else if((*token)->type == T_IF){
+			parserStackPush(&(*S), N_BODY);
+			parserStackPush(&(*S), T_EOL);
+			parserStackPush(&(*S), N_IF);
+		}
+
+		else if((*token)->type == T_WHILE){
+			parserStackPush(&(*S), N_BODY);
+			parserStackPush(&(*S), T_EOL);
+			parserStackPush(&(*S), N_WHILE);
+		}
+
+		else if((*token)->type == T_EOL){
+			parserStackPush(&(*S), N_BODY);
+			parserStackPush(&(*S), T_EOL);
 		}
 	}
 
 	else if(S->a[S->last] == N_BODY_ID){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_ADD:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_SUB:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_MUL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_DIV:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_EQL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_NEQ:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_GT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_LT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_GTE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_LTE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_ASSIGN:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_DEFVAR);
-				parserStackPush(&(*S), T_ASSIGN);
-				break;
-			case T_EOL:
-				parserStackPop(&(*S));
-				break;
-			default:
-				*correct = false;
-				break;
+		if((*token)->type == T_ID ||
+		(*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_LBRCKT ||
+		(*token)->type == T_ADD ||
+		(*token)->type == T_SUB ||
+		(*token)->type == T_MUL ||
+		(*token)->type == T_DIV ||
+		(*token)->type == T_EQL ||
+		(*token)->type == T_NEQ ||
+		(*token)->type == T_GT ||
+		(*token)->type == T_LT ||
+		(*token)->type == T_GTE ||
+		(*token)->type == T_LTE){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_FUNC);
 		}
+
+		else if((*token)->type == T_ASSIGN){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_DEFVAR);
+			parserStackPush(&(*S), T_ASSIGN);
+		}
+
+		else if((*token)->type == T_EOL){
+			parserStackPop(&(*S));
+		}
+
+		else *correct = false;
 	}
 
 	else if(S->a[S->last] == N_TYPE){
-		switch((*token)->type){
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_NIL);			
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_INTEGER);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_STRING);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_FLOAT);
-				break;	
-			default:
-				*correct = false;
-				break;
+		if((*token)->type == T_NIL){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), T_NIL);	
 		}
+
+		else if((*token)->type == T_INTEGER){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), T_INTEGER);	
+		}
+
+		else if((*token)->type == T_STRING){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), T_STRING);	
+		}
+
+		else if((*token)->type == T_FLOAT){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), T_FLOAT);	
+		}
+
+		else *correct = false;
 	}
 
 	else if(S->a[S->last] == N_DEFUNC){
-		switch((*token)->type){
-			case T_DEF:
+		if((*token)->type == T_DEF){
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), T_END);
 				parserStackPush(&(*S), N_BODY);
@@ -291,378 +175,222 @@ void parserExpand(tStack *S, pToken *token, bool *correct){
 				parserStackPush(&(*S), T_LBRCKT);
 				parserStackPush(&(*S), T_ID);
 				parserStackPush(&(*S), T_DEF);
-				break;
-			default:
-				*correct = false;
-				break;
 		}
+
+		else *correct = false;
 	}
 
 	else if(S->a[S->last] == N_FUNC){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARS);
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARS);
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARS);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARS);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARS);
-				break;
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_RBRCKT);
-				parserStackPush(&(*S), N_PARS);
-				parserStackPush(&(*S), T_LBRCKT);
-				break;
-			case T_EOL:
-				parserStackPop(&(*S)); //TODO
-				parserStackPush(&(*S), N_PARS);
-				break;
-			default:
-				*correct = false;
-				break;
+		parserStackPop(&(*S));
+
+		if((*token)->type == T_ID ||
+		(*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_FLOAT){
+			parserStackPush(&(*S), N_PARS);
+		}
+		
+		else if ((*token)->type == T_LBRCKT){
+			parserStackPush(&(*S), T_RBRCKT);
+			parserStackPush(&(*S), N_PARS);
+			parserStackPush(&(*S), T_LBRCKT);
 		}
 	}
 
 	else if(S->a[S->last] == N_PARS){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARSN);
-				parserStackPush(&(*S), T_ID);
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARSN);
-				parserStackPush(&(*S), N_TYPE);
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARSN);
-				parserStackPush(&(*S), N_TYPE);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARSN);
-				parserStackPush(&(*S), N_TYPE);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARSN);
-				parserStackPush(&(*S), N_TYPE);
-				break;
-			case T_EOL:
-				parserStackPop(&(*S));
-				break;
-			case T_RBRCKT:
-				parserStackPop(&(*S));
-				break;
-			default:
-				parserStackPop(&(*S));
-				break;
+		parserStackPop(&(*S));
+
+		if((*token)->type == T_ID){
+			parserStackPush(&(*S), N_PARSN);
+			parserStackPush(&(*S), T_ID);
+		}
+
+		else if((*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_FLOAT){
+			parserStackPush(&(*S), N_PARSN);
+			parserStackPush(&(*S), N_TYPE);
 		}
 	}
 
 	else if(S->a[S->last] == N_PARSN){
-		switch((*token)->type){
-			case T_COMMA:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARS);
-				parserStackPush(&(*S), T_COMMA);
-				break;
-			case T_RBRCKT:
-				parserStackPop(&(*S));
-				break;
-			case T_EOL:
-				parserStackPop(&(*S));
-				break;
-			default:
-				parserStackPop(&(*S));
-				break;
+		parserStackPop(&(*S));
+
+		if((*token)->type == T_COMMA){
+			parserStackPush(&(*S), N_PARS);
+			parserStackPush(&(*S), T_COMMA);
 		}
 	}
 
 	else if(S->a[S->last] == N_IF){
-		switch((*token)->type){
-			case T_IF:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_END);
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), T_ELSE);
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), T_THEN);
-				parserStackPush(&(*S), N_EXPR);
-				parserStackPush(&(*S), T_IF);
-				break;
-			default:
-				*correct = false;
-				break;
+		if((*token)->type == T_IF){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), T_END);
+			parserStackPush(&(*S), N_BODY);
+			parserStackPush(&(*S), T_EOL);
+			parserStackPush(&(*S), T_ELSE);
+			parserStackPush(&(*S), N_BODY);
+			parserStackPush(&(*S), T_EOL);
+			parserStackPush(&(*S), T_THEN);
+			parserStackPush(&(*S), N_EXPR);
+			parserStackPush(&(*S), T_IF);
 		}
+
+		else *correct = false;
 	}
 
 	else if(S->a[S->last] == N_WHILE){
-		switch((*token)->type){
-			case T_WHILE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_END);
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), T_DO);
-				parserStackPush(&(*S), N_EXPR);
-				parserStackPush(&(*S), T_WHILE);
-				break;
-			default:
-				*correct = false;
-				break;
+		if((*token)->type == T_WHILE){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), T_END);
+			parserStackPush(&(*S), N_BODY);
+			parserStackPush(&(*S), T_EOL);
+			parserStackPush(&(*S), T_DO);
+			parserStackPush(&(*S), N_EXPR);
+			parserStackPush(&(*S), T_WHILE);
 		}
+
+		else *correct = false;
 	}
 
 	else if(S->a[S->last] == N_DEFVAR){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_DEFVARID);
-				parserStackPush(&(*S), T_ID);
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_NOT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			default:
-				*correct = false;
-				break;
+		if((*token)->type == T_ID){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_DEFVARID);
+			parserStackPush(&(*S), T_ID);
 		}
+
+		else if((*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_NOT ||
+		(*token)->type == T_LBRCKT){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_EXPR);
+		}
+
+		else *correct = false;
 	}
 
 	else if(S->a[S->last] == N_DEFVARID){
-		switch((*token)->type){
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_EOL: //TODO
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				break;
-			case T_ADD:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_SUB:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_DIV:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_MUL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_EQL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_NEQ:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_LT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_GT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_LTE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			case T_GTE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			default:
-				*correct = false;
-				break;
+		parserStackPop(&(*S));
+
+		if((*token)->type == T_LBRCKT ||
+		(*token)->type == T_ID ||
+		(*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_STRING){
+			parserStackPush(&(*S), N_FUNC);
+		}
+
+		else if((*token)->type == T_ADD ||
+		(*token)->type == T_SUB ||
+		(*token)->type == T_DIV ||
+		(*token)->type == T_MUL ||
+		(*token)->type == T_EQL ||
+		(*token)->type == T_NEQ ||
+		(*token)->type == T_LT ||
+		(*token)->type == T_GT ||
+		(*token)->type == T_LTE ||
+		(*token)->type == T_GTE){
+			parserStackPush(&(*S), N_EXPR_O);
 		}
 	}
 
 	else if(S->a[S->last] == N_EXPR_ID){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				parserStackPush(&(*S), T_ID);
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_NOT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_O);
-				break;
-			default:
-				*correct = false;
-				break;
+		if((*token)->type == T_ID){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_EXPR_O);
+			parserStackPush(&(*S), T_ID);
 		}
+
+		else if((*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_NOT){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_EXPR);
+		}
+
+		else if((*token)->type == T_LBRCKT){
+			parserStackPop(&(*S));
+			parserStackPush(&(*S), N_EXPR_O);
+		}
+
+		else *correct = false;
 	}
 
 	else if(S->a[S->last] == N_EXPR_O){
-		switch((*token)->type){
-			case T_ADD:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_ADD);
-				break;
-			case T_SUB:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_SUB);
-				break;
-			case T_DIV:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_DIV);
-				break;
-			case T_MUL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_MUL);
-				break;
-			case T_EQL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_EQL);
-				break;
-			case T_NEQ:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_NEQ);
-				break;
-			case T_GT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_GT);
-				break;
-			case T_LT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_LT);
-				break;
-			case T_GTE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_GTE);
-				break;
-			case T_LTE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR_ID);
-				parserStackPush(&(*S), T_LTE);
-				break;
-			case T_EOL:
-				parserStackPop(&(*S));
-				break;
-			default:
-				parserStackPop(&(*S));
-				break;
+		parserStackPop(&(*S));
+
+		if((*token)->type == T_ADD){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_ADD);
+		}
+
+		else if((*token)->type == T_SUB){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_SUB);
+		}
+
+		else if((*token)->type == T_DIV){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_DIV);
+		}
+
+		else if((*token)->type == T_MUL){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_MUL);
+		}
+
+		else if((*token)->type == T_EQL){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_EQL);
+		}
+
+		else if((*token)->type == T_NEQ){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_NEQ);
+		}
+
+		else if((*token)->type == T_GT){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_GT);
+		}
+
+		else if((*token)->type == T_LT){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_LT);
+		}
+
+		else if((*token)->type == T_GTE){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_GTE);
+		}
+
+		else if((*token)->type == T_LTE){
+			parserStackPush(&(*S), N_EXPR_ID);
+			parserStackPush(&(*S), T_LTE);
 		}
 	}
 
 	else if(S->a[S->last] == N_EXPR){
-		switch((*token)->type){
-			case T_EOL:
-				parserStackPop(&(*S));
-				break;
-			case T_THEN:
-				parserStackPop(&(*S));
-				break;
-			case T_DO:
-				parserStackPop(&(*S));
-				break;
-			case T_EOF:
-				parserStackPop(&(*S));
-				break;
-			default:
-				*token = (*token)->nextToken;
-				break;
+		if((*token)->type == T_EOL ||
+		(*token)->type == T_THEN ||
+		(*token)->type == T_DO ||
+		(*token)->type == T_EOF){
+			parserStackPop(&(*S));
 		}
+
+		else *token = (*token)->nextToken;
 	}
 
-	else fprintf(stderr, "Chyba: Neočekávaný token na stacku!\n");
+	else fprintf(stderr, "Interní chyba: Neočekávaný token na stacku!\n");
 
 	return;
 }
@@ -674,8 +402,10 @@ void parserStackInit(tStack *S){
 }	
 
 void parserStackPush(tStack *S, tType type){
-	if (S->top==MAXSTACK) 
+	if (S->top==MAXSTACK){ 
 		fprintf(stderr, "Interní chyba: Došlo k přetečení zásobníku!\n");
+		return; //TODO
+	}
 	else {
 		S->a[S->top]=type;
 		S->top++;
@@ -685,8 +415,8 @@ void parserStackPush(tStack *S, tType type){
 
 tType parserStackPop(tStack *S){
 	if (S->top==0) {
-		fprintf(stderr, "Interní chyba: Došlo k podtečení zásobníku!\n"); //TODO
-		return(S->a[0]);	
+		fprintf(stderr, "Interní chyba: Došlo k podtečení zásobníku!\n");
+		return(T_UNKNOWN); //TODO
 	}	
 	else {
 		S->last--;
