@@ -10,11 +10,9 @@ void parser(pToken *List){
 	parserStackInit(&S);
 
 	while(token != NULL){
-		
-		if(token->type == T_ID) parserTestIDFN(token); // Zatím nedělá nic, TODO
 
 		if(S.a[S.last] > T_STRING){
-			parserExpand(&S, &token);
+			parserExpand(&S, &token, &correct);
 		}
 
 		else{
@@ -24,7 +22,7 @@ void parser(pToken *List){
 		}
 
 		if(!correct){
-			printf("Chyba: Neočekávaný symbol!\n");
+			fprintf(stderr, "Chyba: Neočekávaný symbol!");
 			return;
 		}
 	}
@@ -34,51 +32,66 @@ bool parserCompare(tStack S, pToken token){
 	return (S.a[S.last] == token->type);
 }
 
-void parserExpand(tStack *S, pToken *token){
+void parserExpand(tStack *S, pToken *token, bool *correct){
 	if(S->a[S->last] == N_PROG){
 		switch((*token)->type){
 			case T_ID:
-				if((*token)->nextToken->type != T_ASSIGN){
-					parserStackPop(&(*S));
-					parserStackPush(&(*S), N_EXPR);
-				}
-				else{
-					parserStackPop(&(*S));
-					parserStackPush(&(*S), N_PROG);
-					parserStackPush(&(*S), T_EOL);
-					parserStackPush(&(*S), N_BODY);
-				}
-				break;
-			case T_IDFN:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_BODY);
 				break;
-			case T_EOF:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_EOF);
-				break;
-			case T_DEF:
+			case T_NIL:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), N_DEFUNC);
+				parserStackPush(&(*S), N_BODY);
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PROG);
+				parserStackPush(&(*S), N_BODY);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PROG);
+				parserStackPush(&(*S), N_BODY);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PROG);
+				parserStackPush(&(*S), N_BODY);
+				break;
+			case T_NOT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PROG);
+				parserStackPush(&(*S), N_BODY);
+				break;
+			case T_LBRCKT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PROG);
+				parserStackPush(&(*S), N_BODY);
 				break;
 			case T_IF:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_BODY);
 				break;
 			case T_WHILE:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_BODY);
 				break;
+			case T_DEF:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PROG);
+				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), N_DEFUNC);
+				break;
+			case T_EOF:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_EOF);
+				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
+				*correct = false;
 				break;
 		}
 	}
@@ -89,15 +102,43 @@ void parserExpand(tStack *S, pToken *token){
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
 				parserStackPush(&(*S), N_NEWL);
-				parserStackPush(&(*S), N_DEFVAR);
+				parserStackPush(&(*S), N_BODY_ID);
+				parserStackPush(&(*S), T_ID);
 				break;
-			case T_IDFN:
+			case T_NIL:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
 				parserStackPush(&(*S), N_NEWL);
-				parserStackPush(&(*S), N_CALFUNC);
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_BODY);
+				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_BODY);
+				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_BODY);
+				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_NOT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_BODY);
+				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), N_EXPR);
 				break;
 			case T_END:
+				parserStackPop(&(*S));
+				break;
+			case T_ELSE:
 				parserStackPop(&(*S));
 				break;
 			case T_IF:
@@ -106,20 +147,118 @@ void parserExpand(tStack *S, pToken *token){
 				parserStackPush(&(*S), N_NEWL);
 				parserStackPush(&(*S), N_IF);
 				break;
-			case T_ELSE:
-				parserStackPop(&(*S));
-				break;
 			case T_WHILE:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
 				parserStackPush(&(*S), N_NEWL);
-				parserStackPush(&(*S), N_WHILE);				
+				parserStackPush(&(*S), N_WHILE);
 				break;
-			case T_EOF:
+			default:
+				parserStackPop(&(*S));
+				break;
+		}
+	}
+
+	else if(S->a[S->last] == N_BODY_ID){
+		switch((*token)->type){
+			case T_ID:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_NIL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_LBRCKT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_ADD:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_SUB:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_MUL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_DIV:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_EQL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_NEQ:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_GT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_LT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_GTE:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_LTE:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_ASSIGN:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_DEFVAR);
+				parserStackPush(&(*S), T_ASSIGN);
+				break;
+			case T_EOL:
 				parserStackPop(&(*S));
 				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
+				*correct = false;
+				break;
+		}
+	}
+
+	else if(S->a[S->last] == N_TYPE){
+		switch((*token)->type){
+			case T_NIL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_NIL);			
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_INTEGER);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_STRING);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_FLOAT);
+				break;	
+			default:
+				*correct = false;
 				break;
 		}
 	}
@@ -129,13 +268,11 @@ void parserExpand(tStack *S, pToken *token){
 			case T_EOL:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_NEWLN);
-				parserStackPush(&(*S), T_EOL);				
-				break;
-			case T_EOF:
-				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_EOL);
 				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
+				*correct = false;
+				return;
 				break;
 		}
 	}
@@ -145,27 +282,99 @@ void parserExpand(tStack *S, pToken *token){
 			case T_ID:
 				parserStackPop(&(*S));
 				break;
-			case T_IDFN:
+			case T_NIL:
 				parserStackPop(&(*S));
 				break;
-			case T_EOL:
+			case T_INTEGER:
 				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_NEWLN);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				break;
+			case T_NOT:
+				parserStackPop(&(*S));
+				break;
+			case T_EOF:
+				parserStackPop(&(*S));
+				break;
+			case T_LBRCKT:
+				parserStackPop(&(*S));
+				break;
+			case T_DEF:
+				parserStackPop(&(*S));
 				break;
 			case T_IF:
 				parserStackPop(&(*S));
 				break;
-			case T_WHILE:
+			case T_THEN:
 				parserStackPop(&(*S));
 				break;
-			case T_ELSE:
+			case T_EOL:
 				parserStackPop(&(*S));
-				break;
-			case T_END:
-				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_EOL);
 				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
+				parserStackPop(&(*S));
+				break;
+		}
+	}
+
+	else if(S->a[S->last] == N_DEFUNC){
+		switch((*token)->type){
+			case T_DEF:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_END);
+				parserStackPush(&(*S), N_BODY);
+				parserStackPush(&(*S), T_EOL);
+				parserStackPush(&(*S), T_RBRCKT);
+				parserStackPush(&(*S), N_PARS);
+				parserStackPush(&(*S), T_LBRCKT);
+				parserStackPush(&(*S), T_ID);
+				parserStackPush(&(*S), T_DEF);
+				break;
+			default:
+				*correct = false;
+				break;
+		}
+	}
+
+	else if(S->a[S->last] == N_FUNC){
+		switch((*token)->type){
+			case T_ID:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PARS);
+				break;
+			case T_NIL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PARS);
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PARS);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PARS);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PARS);
+				break;
+			case T_LBRCKT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), T_RBRCKT);
+				parserStackPush(&(*S), N_PARS);
+				parserStackPush(&(*S), T_LBRCKT);
+				break;
+			case T_EOL:
+				parserStackPop(&(*S)); //TODO
+				parserStackPush(&(*S), N_PARS);
+				break;
+			default:
+				*correct = false;
 				break;
 		}
 	}
@@ -177,16 +386,34 @@ void parserExpand(tStack *S, pToken *token){
 				parserStackPush(&(*S), N_PARSN);
 				parserStackPush(&(*S), T_ID);
 				break;
+			case T_NIL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PARSN);
+				parserStackPush(&(*S), N_TYPE);
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PARSN);
+				parserStackPush(&(*S), N_TYPE);
+				break;
 			case T_STRING:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_PARSN);
-				parserStackPush(&(*S), T_STRING);
+				parserStackPush(&(*S), N_TYPE);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PARSN);
+				parserStackPush(&(*S), N_TYPE);
+				break;
+			case T_EOL:
+				parserStackPop(&(*S));
 				break;
 			case T_RBRCKT:
 				parserStackPop(&(*S));
 				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
+				parserStackPop(&(*S));
 				break;
 		}
 	}
@@ -205,106 +432,7 @@ void parserExpand(tStack *S, pToken *token){
 				parserStackPop(&(*S));
 				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
-				break;
-		}
-	}
-
-	else if(S->a[S->last] == N_DEFUNC){
-		switch((*token)->type){
-			case T_DEF:
 				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_END);
-				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), T_EOL);
-				parserStackPush(&(*S), T_RBRCKT);
-				parserStackPush(&(*S), N_PARS);
-				parserStackPush(&(*S), T_LBRCKT);
-				parserStackPush(&(*S), T_IDFN);
-				parserStackPush(&(*S), T_DEF);
-				break;
-			default:
-				printf("Chyba: Neočekávaný symbol!\n");
-				break;
-		}
-	}
-
-	else if(S->a[S->last] == N_CALFUNC){
-		switch((*token)->type){
-			case T_IDFN:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_FUNC);
-				parserStackPush(&(*S), T_IDFN);
-				break;
-			default:
-				printf("Chyba: Neočekávaný symbol!\n");
-				break;
-		}
-	}
-
-	else if(S->a[S->last] == N_FUNC){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARS);
-				break;
-			case T_EOL:
-				parserStackPop(&(*S));
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_PARS);
-				break;
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_RBRCKT);
-				parserStackPush(&(*S), N_PARS);
-				parserStackPush(&(*S), T_LBRCKT);
-				break;
-			default:
-				printf("Chyba: Neočekávaný symbol!\n");
-				break;
-		}
-	}
-
-	else if(S->a[S->last] == N_DEFVAR){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_VAR);
-				parserStackPush(&(*S), T_ASSIGN);
-				parserStackPush(&(*S), T_ID);
-				break;
-			default:
-				printf("Chyba: Neočekávaný symbol!\n");
-				break;
-		}
-	}
-
-	else if(S->a[S->last] == N_VAR){
-		switch((*token)->type){
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_DOUBLE:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_DOUBLE_E:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_ID:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_EXPR);
-				break;
-			case T_IDFN:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_CALFUNC);
-				break;
-			default:
-				printf("Chyba: Neočekávaný symbol!\n");
 				break;
 		}
 	}
@@ -324,7 +452,7 @@ void parserExpand(tStack *S, pToken *token){
 				parserStackPush(&(*S), T_IF);
 				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
+				*correct = false;
 				break;
 		}
 	}
@@ -341,61 +469,224 @@ void parserExpand(tStack *S, pToken *token){
 				parserStackPush(&(*S), T_WHILE);
 				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
+				*correct = false;
+				break;
+		}
+	}
+
+	else if(S->a[S->last] == N_DEFVAR){
+		switch((*token)->type){
+			case T_ID:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_DEFVARID);
+				parserStackPush(&(*S), T_ID);
+				break;
+			case T_NIL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_NOT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_LBRCKT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			default:
+				*correct = false;
+				break;
+		}
+	}
+
+	else if(S->a[S->last] == N_DEFVARID){
+		switch((*token)->type){
+			case T_LBRCKT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_ID:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_NIL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_EOL: //TODO
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_FUNC);
+				break;
+			case T_ADD:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_SUB:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_DIV:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_MUL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_EQL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_NEQ:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_LT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_GT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_LTE:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			case T_GTE:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			default:
+				*correct = false;
+				break;
+		}
+	}
+
+	else if(S->a[S->last] == N_EXPR_ID){
+		switch((*token)->type){
+			case T_ID:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				parserStackPush(&(*S), T_ID);
+				break;
+			case T_NIL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_INTEGER:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_STRING:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_FLOAT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_NOT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_LBRCKT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_O);
+				break;
+			default:
+				*correct = false;
+				break;
+		}
+	}
+
+	else if(S->a[S->last] == N_EXPR_O){
+		switch((*token)->type){
+			case T_ADD:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_ADD);
+				break;
+			case T_SUB:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_SUB);
+				break;
+			case T_DIV:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_DIV);
+				break;
+			case T_MUL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_MUL);
+				break;
+			case T_EQL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_EQL);
+				break;
+			case T_NEQ:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_NEQ);
+				break;
+			case T_GT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_GT);
+				break;
+			case T_LT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_LT);
+				break;
+			case T_GTE:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_GTE);
+				break;
+			case T_LTE:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_EXPR_ID);
+				parserStackPush(&(*S), T_LTE);
+				break;
+			case T_EOL:
+				parserStackPop(&(*S));
+				break;
+			default:
+				parserStackPop(&(*S));
 				break;
 		}
 	}
 
 	else if(S->a[S->last] == N_EXPR){
 		switch((*token)->type){
-			case T_INTEGER:
-				*token = (*token)->nextToken;
-				break;
-			case T_DOUBLE:
-				*token = (*token)->nextToken;
-				break;
-			case T_DOUBLE_E:
-				*token = (*token)->nextToken;
-				break;
-			case T_ID:
-				*token = (*token)->nextToken;
-				break;
-			case T_RBRCKT:
-				*token = (*token)->nextToken;
-				break;
-			case T_LBRCKT:
-				*token = (*token)->nextToken;
-				break;
-			case T_ADD:
-				*token = (*token)->nextToken;
-				break;
-			case T_SUB:
-				*token = (*token)->nextToken;
-				break;
-			case T_MUL:
-				*token = (*token)->nextToken;
-				break;
-			case T_DIV:
-				*token = (*token)->nextToken;
-				break;
-			case T_EQL:
-				*token = (*token)->nextToken;
-				break;
-			case T_NEQ:
-				*token = (*token)->nextToken;
-				break;
-			case T_LT:
-				*token = (*token)->nextToken;
-				break;
-			case T_GT:
-				*token = (*token)->nextToken;
-				break;
-			case T_LTE:
-				*token = (*token)->nextToken;
-				break;
-			case T_GTE:
-				*token = (*token)->nextToken;
-				break;
 			case T_EOL:
 				parserStackPop(&(*S));
 				break;
@@ -409,12 +700,12 @@ void parserExpand(tStack *S, pToken *token){
 				parserStackPop(&(*S));
 				break;
 			default:
-				printf("Chyba: Neočekávaný symbol!\n");
+				*token = (*token)->nextToken;
 				break;
 		}
 	}
 
-	else printf("Chyba: Neočekávaný token na stacku!\n");
+	else fprintf(stderr, "Chyba: Neočekávaný token na stacku!\n");
 
 	return;
 }
@@ -422,12 +713,12 @@ void parserExpand(tStack *S, pToken *token){
 void parserStackInit(tStack *S){
 	S->top = 1;
 	S->last = 0;
-	S->a[0] = N_PROG; 		//výchozí neterminál je <prog>
+	S->a[0] = N_PROG; 		// Výchozí neterminál je <prog>
 }	
 
 void parserStackPush(tStack *S, tType type){
 	if (S->top==MAXSTACK) 
-		printf("Interní chyba: Došlo k přetečení zásobníku!\n");
+		fprintf(stderr, "Interní chyba: Došlo k přetečení zásobníku!\n");
 	else {
 		S->a[S->top]=type;
 		S->top++;
@@ -437,7 +728,7 @@ void parserStackPush(tStack *S, tType type){
 
 tType parserStackPop(tStack *S){
 	if (S->top==0) {
-		printf("Interní chyba: Došlo k podtečení zásobníku!\n");
+		fprintf(stderr, "Interní chyba: Došlo k podtečení zásobníku!\n"); //TODO
 		return(S->a[0]);	
 	}	
 	else {
@@ -448,10 +739,4 @@ tType parserStackPop(tStack *S){
 
 bool parserStackEmpty(tStack *S){
 	return(S->top==0);
-}
-
-void parserTestIDFN(pToken *id){
-	//TODO - zjistit, které identifikátory patří funkcím
-	id = id;
-	return;
 }

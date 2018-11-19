@@ -1,12 +1,21 @@
-print! "Zadejte cislo pro vypocet faktorialu: "
-a = inputi!
+
+print "Zadejte cislo pro vypocet faktorialu: "
+a = inputi(10, 20, nil)
 if a < 0 then
-	print!("\nFaktorial nelze spocitat\n")
+	print("\nFaktorial nelze spocitat\n")
 else
 	vysl = 1
 	while a > 0 do
 		vysl = vysl * a
-		a = a - 1
+		a = a - "bbbbb"
 	end
-	print! "\nVysledek je:", vysl, "\n"
+	print "\nVysledek je:", vysl, "\n"
+end
+
+def bagr(a, b)
+	if nil then
+	else
+	end
+	while e do
+	end
 end

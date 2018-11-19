@@ -26,6 +26,7 @@
 		"backgroundColor": "aqua"
 	},
 	"files.associations": {
-		"scanner.h": "c"
+		"scanner.h": "c",
+		"main.h": "c"
 	}
 }

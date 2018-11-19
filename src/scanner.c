@@ -211,7 +211,7 @@ int _scannerFSM(FILE *file, pToken token){
 			case STATE_DBLE2:
 				if(isdigit(currChar)) nextState = STATE_DBLE2;
 				else if(tolower(currChar) == 'e') nextState = STATE_EXP;
-				else token->type = T_DOUBLE;
+				else token->type = T_FLOAT;
 				break;
 			case STATE_EXP:
 				if(isdigit(currChar)) nextState = STATE_EXP3;
@@ -224,7 +224,7 @@ int _scannerFSM(FILE *file, pToken token){
 				break;
 			case STATE_EXP3:
 				if(isdigit(currChar)) nextState = STATE_EXP3;
-				else token->type = T_DOUBLE;
+				else token->type = T_FLOAT;
 				break;
 			// Comment
 			case STATE_LCMNT:
@@ -364,7 +364,7 @@ void scannerFreeToken(pToken *token){
 	switch((*token)->type){
 		case T_STRING:
 		case T_INTEGER:
-		case T_DOUBLE:
+		case T_FLOAT:
 		case T_ID:
 		case T_IDFN:
 			free((*token)->data);
@@ -457,7 +457,6 @@ void scannerPrintToken(pToken token){
 	printf("#%d:%d\t", token->linePos, token->colPos);
 	
 	switch(token->type){
-		case T_UNKNOWN: printf("UNKNOWN"); break;
 		case T_ID: 		printf("ID"); break;
 		case T_IDFN: 	printf("IDFN"); break;
 		case T_DEF: 	printf("DEF"); break;
@@ -486,14 +485,15 @@ void scannerPrintToken(pToken token){
 		case T_GTE: 	printf("GTE"); break;
 		case T_ASSIGN: 	printf("ASSIGN"); break;
 		case T_INTEGER: printf("INTEGER"); break;
-		case T_DOUBLE: 	printf("DOUBLE"); break;
+		case T_FLOAT: 	printf("DOUBLE"); break;
 		case T_STRING: 	printf("STRING"); break;
+		default: printf("UNKNOWN"); break;
 	}
 	
 	switch(token->type){
 		case T_STRING:
 		case T_INTEGER:
-		case T_DOUBLE:
+		case T_FLOAT:
 		case T_ID:
 		case T_IDFN:
 			printf("(%s)", (char*)token->data);

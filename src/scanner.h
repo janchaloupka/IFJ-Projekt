@@ -56,22 +56,25 @@ typedef enum{
 	T_GTE,		//!< Porovnání - Větší nebo se rovná
 	T_ASSIGN,	//!< Přiřazení
 	T_INTEGER,	//!< Celé kladné číslo
-	T_DOUBLE,	//!< Desetinné kladné číslo
+	T_FLOAT,	//!< Desetinné kladné číslo
 	T_STRING,	//!< Řetězec znaků
 	N_PROG, 	//!< Neterminály
 	N_BODY,
+	N_BODY_ID,
+	N_TYPE,
 	N_NEWL,
 	N_NEWLN,
 	N_DEFUNC,
-	N_CALFUNC,
 	N_FUNC,
 	N_PARS,
 	N_PARSN,
 	N_DEFVAR,
-	N_VAR,
+	N_DEFVARID,
 	N_IF,
 	N_WHILE,
 	N_EXPR,
+	N_EXPR_O,
+	N_EXPR_ID,
 } tType;
 
 

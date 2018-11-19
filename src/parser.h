@@ -53,7 +53,7 @@ bool parserCompare(tStack S, pToken token);
  * @param S Ukazatel na zásobník terminálů/neterminálů určených ke zpracování
  * @param token Momentálně zpracovávaný token
  */
-void parserExpand(tStack *S, pToken *token);
+void parserExpand(tStack *S, pToken *token, bool *correct);
 
 /**
  * Inicializuje zásobník, na první místo vloží type N_PROG jakožto výchozí stav
