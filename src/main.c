@@ -2,6 +2,8 @@
 
 int main(int argc, char const *argv[])
 {
+	return yellDebug();
+
 	if(argc > 1){
 		if(strcmp(argv[1], "j32") == 0) return janchDebug();
 
@@ -12,7 +14,7 @@ int main(int argc, char const *argv[])
 }
 
 int yellDebug(){
-	FILE *source = fopen("test-code.3", "r");
+	FILE *source = fopen("test-code", "r");
 	
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);
