@@ -80,10 +80,15 @@ void parserExpand(tStack *S, pToken *token, bool *correct){
 				parserStackPush(&(*S), N_PROG);
 				parserStackPush(&(*S), N_BODY);
 				break;
+			case T_EOL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_PROG);
+				parserStackPush(&(*S), N_BODY);
+				break;
 			case T_DEF:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_PROG);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_DEFUNC);
 				break;
 			case T_EOF:
@@ -101,38 +106,44 @@ void parserExpand(tStack *S, pToken *token, bool *correct){
 			case T_ID:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_BODY_ID);
 				parserStackPush(&(*S), T_ID);
 				break;
 			case T_NIL:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_EXPR);
 				break;
 			case T_INTEGER:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_EXPR);
 				break;
 			case T_STRING:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_EXPR);
 				break;
 			case T_FLOAT:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_EXPR);
 				break;
 			case T_NOT:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
+				parserStackPush(&(*S), N_EXPR);
+				break;
+			case T_LBRCKT:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_BODY);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_EXPR);
 				break;
 			case T_END:
@@ -144,14 +155,19 @@ void parserExpand(tStack *S, pToken *token, bool *correct){
 			case T_IF:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_IF);
 				break;
 			case T_WHILE:
 				parserStackPop(&(*S));
 				parserStackPush(&(*S), N_BODY);
-				parserStackPush(&(*S), N_NEWL);
+				parserStackPush(&(*S), T_EOL);
 				parserStackPush(&(*S), N_WHILE);
+				break;
+			case T_EOL:
+				parserStackPop(&(*S));
+				parserStackPush(&(*S), N_BODY);
+				parserStackPush(&(*S), T_EOL);
 				break;
 			default:
 				parserStackPop(&(*S));
@@ -259,65 +275,6 @@ void parserExpand(tStack *S, pToken *token, bool *correct){
 				break;	
 			default:
 				*correct = false;
-				break;
-		}
-	}
-
-	else if(S->a[S->last] == N_NEWL){
-		switch((*token)->type){
-			case T_EOL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), N_NEWLN);
-				parserStackPush(&(*S), T_EOL);
-				break;
-			default:
-				*correct = false;
-				return;
-				break;
-		}
-	}
-
-	else if(S->a[S->last] == N_NEWLN){
-		switch((*token)->type){
-			case T_ID:
-				parserStackPop(&(*S));
-				break;
-			case T_NIL:
-				parserStackPop(&(*S));
-				break;
-			case T_INTEGER:
-				parserStackPop(&(*S));
-				break;
-			case T_STRING:
-				parserStackPop(&(*S));
-				break;
-			case T_FLOAT:
-				parserStackPop(&(*S));
-				break;
-			case T_NOT:
-				parserStackPop(&(*S));
-				break;
-			case T_EOF:
-				parserStackPop(&(*S));
-				break;
-			case T_LBRCKT:
-				parserStackPop(&(*S));
-				break;
-			case T_DEF:
-				parserStackPop(&(*S));
-				break;
-			case T_IF:
-				parserStackPop(&(*S));
-				break;
-			case T_THEN:
-				parserStackPop(&(*S));
-				break;
-			case T_EOL:
-				parserStackPop(&(*S));
-				parserStackPush(&(*S), T_EOL);
-				break;
-			default:
-				parserStackPop(&(*S));
 				break;
 		}
 	}

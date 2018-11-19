@@ -62,8 +62,6 @@ typedef enum{
 	N_BODY,
 	N_BODY_ID,
 	N_TYPE,
-	N_NEWL,
-	N_NEWLN,
 	N_DEFUNC,
 	N_FUNC,
 	N_PARS,

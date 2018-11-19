@@ -7,23 +7,24 @@ int main(int argc, char const *argv[])
 
 		if(strcmp(argv[1], "yell") == 0) return yellDebug();
 	}
-
-	// Hlavní program
+	
 	return 0;
 }
 
 int yellDebug(){
-	FILE *source = fopen("test-code", "r");
+	FILE *source = fopen("test-code.3", "r");
 	
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);
-	parser(&token);		// Zatím nedělá nic useful anyways
+	parser(&token);
+	fclose(source);
+	scannerFreeTokenList(&token);
 
 	return 0;
 }
  
 int janchDebug(){
-	FILE *source = fopen("test-code", "r");
+	FILE *source = fopen("test-code.3", "r");
 	
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);
