@@ -17,21 +17,6 @@
 <expr_o>    -> >= <expr_id> 
 <expr_o>    -> ε 
 
-//body
-
-<body>      -> id <body_id> EOL <body>
-<body>      -> <expr> EOL <body>
-<body_id>   -> <expr_o>
-<body_id>   -> = <def_var> 
-<body_id>   -> <func>
-<body_id>   -> ε
-<def_var>   -> <expr>
-<def_var>   -> id <def_var_id>
-<def_var_id> -> <expr_o>
-<def_var_id> -> <func>
-
-// všechno níž by mělo být 99% dobře ---------------------------------
-
 //program 
 <prog>      -> <def_func> EOL <prog>
 <prog>      -> <body> <prog>
@@ -45,9 +30,19 @@
 
 //body
 <body>      -> ε
+<body>      -> EOL <body>
 <body>      -> <if> EOL <body>
 <body>      -> <while> EOL <body>
-<body>      -> EOL <body>
+<body>      -> <expr> EOL <body>
+<body>      -> id <body_id> EOL <body>
+<body_id>   -> <expr_o>
+<body_id>   -> = <def_var> 
+<body_id>   -> <func>
+<body_id>   -> ε
+<def_var>   -> <expr>
+<def_var>   -> id <def_var_id>
+<def_var_id> -> <expr_o>
+<def_var_id> -> <func>
 
 //function
 <def_func>  -> def id ( <params> ) EOL <body> end
