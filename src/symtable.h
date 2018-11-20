@@ -1,32 +1,31 @@
-/*
- * symtab.h
- *
- * Hlavičkový soubor pro symtab.c
- *
- */
-
-
 #include<stdio.h>
-#include<stdlib.h>
-#include<stdarg.h>
-
-#define TRUE 1
-#define FALSE 0
+#include<stdbool.h>
 
 
-/* uzel stromu */
 
-typedef struct tBSTNode {
-	char Key;			                                     /* klíč */
-	int Content;                                             /* užitečný obsah uzlu */
-	struct tBSTNode *LPtr;                                   /* levý podstrom */
-	struct tBSTNode *RPtr;                                   /* pravý podstrom */
-} *tBSTNodePtr;
+typedef struct Param{
+	int type;
+	char *id;
+	struct Param *next;
+}TParam;
 
-/* prototypy funkcí */
+//data v uzlu
+typedef struct Data{
+	int type;
+	TParam *params;
+	bool defined;
+}TData;
 
-void BSTInit   (tBSTNodePtr *);
-int BSTSearch  (tBSTNodePtr, char, int *);
-void BSTInsert (tBSTNodePtr *, char, int);
-void BSTDelete (tBSTNodePtr *, char);
-void BSTDispose(tBSTNodePtr *);
+//uzel stromu
+typedef struct Node{
+	char *key;	
+	struct TData *data;
+	struct Node *lptr;
+	struct Node *rptr;
+}TNode;
+
+//seznam stromu
+typedef struct SymTab{
+	TNode *first; //ukazatel na koren prvniho stromu
+	struct SymTab *next; //ukazatel na dalsi strom
+}TSymTab;
