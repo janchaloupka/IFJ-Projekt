@@ -317,14 +317,10 @@ int parserExpand(tStack *S, pToken *token, bool *correct, int *error){
 		(*token)->type == T_INTEGER ||
 		(*token)->type == T_STRING ||
 		(*token)->type == T_FLOAT ||
-		(*token)->type == T_NOT){
+		(*token)->type == T_NOT ||
+		(*token)->type == T_LBRCKT){
 			parserStackPop(&(*S), error);
 			parserStackPush(&(*S), N_EXPR, error);
-		}
-
-		else if((*token)->type == T_LBRCKT){
-			parserStackPop(&(*S), error);
-			parserStackPush(&(*S), N_EXPR_O, error);
 		}
 
 		else *correct = false;
