@@ -1,0 +1,21 @@
+//types
+<val>	-> nil
+<val>	-> integer
+<val>	-> float
+<val>	-> string
+<val>	-> id
+
+<expr>	-> <val>
+<expr>	-> ( <expr> )
+# <expr>	-> + <expr>
+# <expr>	-> - <expr>
+<expr>	-> <expr> + <expr>
+<expr>	-> <expr> - <expr>
+<expr>	-> <expr> / <expr>
+<expr>	-> <expr> * <expr>
+<expr>	-> <expr> == <expr>
+<expr>	-> <expr> != <expr>
+<expr>	-> <expr> < <expr>
+<expr>	-> <expr> > <expr>
+<expr>	-> <expr> <= <expr>
+<expr>	-> <expr> >= <expr>

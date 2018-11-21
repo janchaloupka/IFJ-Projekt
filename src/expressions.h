@@ -77,7 +77,7 @@ typedef struct eStack{
 
 eTerm		exprConvTypeToTerm(tType tokenType);
 eRelation	exprGetRelation(eTerm currTerm, eTerm newTerm);
-int 		exprParse(pToken token, peNode *nodeTree);
+int 		exprParse(pToken *token, peNode *nodeTree);
 
 void	exprStackInit(peStack *stack);
 void	exprStackPush(peStack stack, peNode node);

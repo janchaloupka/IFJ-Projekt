@@ -71,7 +71,7 @@ eRelation exprGetRelation(eTerm currTerm, eTerm newTerm){
 	return ERROR;
 }
 
-int exprParse(pToken token, peNode *nodeTree){
+int exprParse(pToken *token, peNode *nodeTree){
 	peStack stack;
 	exprStackInit(&stack);
 
@@ -81,7 +81,7 @@ int exprParse(pToken token, peNode *nodeTree){
 		int termPos = exprStackFirstTermPos(stack);
 		if(termPos < 0) stackT = E_$;
 		else stackT = exprConvTypeToTerm(stack->s[termPos]->val.token->type);
-		newT = exprConvTypeToTerm(token->type);
+		newT = exprConvTypeToTerm((*token)->type);
 		eRelation rel = exprGetRelation(stackT, newT);
 
 		peNode node;
@@ -90,10 +90,10 @@ int exprParse(pToken token, peNode *nodeTree){
 				exprStackInsertOpen(stack, termPos + 1);
 				node = malloc(sizeof(struct eNode));
 				node->type = NT_TOKEN;
-				node->val.token = token;
+				node->val.token = *token;
 
 				exprStackPush(stack, node);
-				token = token->nextToken;
+				*token = (*token)->nextToken;
 				break;
 			case CLOSE:
 				if(1 == exprStackToRule(stack)){
@@ -102,17 +102,17 @@ int exprParse(pToken token, peNode *nodeTree){
 				}
 				break;
 			case EQUAL:
-				break;
 				node = malloc(sizeof(struct eNode));
 				node->type = NT_TOKEN;
-				node->val.token = token;
+				node->val.token = *token;
 
 				exprStackPush(stack, node);
-				token = token->nextToken;
+				*token = (*token)->nextToken;
 				break;
 			case ERROR:
 				if(stackT == newT && stackT == E_$){
-					*nodeTree = stack->s[stack->top];
+					if(nodeTree != NULL)
+						*nodeTree = stack->s[stack->top];
 					return 0;
 				}
 				fprintf(stderr, "Nastala chyba při persování expr: %d->%d\n", stackT, newT);
@@ -181,70 +181,86 @@ int exprStackToRule(peStack stack){
 		return 1; // Chyba
 	}
 
-	if(node->type != NT_RELATION){
-		if(node->type == NT_TOKEN){
-			if(exprConvTypeToTerm(node->val.token->type) != E_VAL){
+	if(node->type == NT_TOKEN){
+		if(node->val.token->type == T_RBRCKT){
+			node = exprStackPop(stack);
+			if(node->type != NT_RULE){
 				return 1; // Chyba
 			}
-		}
-		newRule->rNode = node;
 
-		
-		node = exprStackPop(stack);
-		if(node->type == NT_RELATION){
-			// Hotovo
-			newRule->type = RT_VAL;
-			exprStackPush(stack, newNode);
+			peNode nnode = exprStackPop(stack);
+			if(nnode->type != NT_TOKEN || nnode->val.token->type != T_LBRCKT){
+				return 1; // Chyba
+			}
+			
+			nnode = exprStackPop(stack);
+			if(nnode->type != NT_RELATION){
+				return 1; // Chyba
+			}
+
+			exprStackPush(stack, node);			
 			return 0;
-		}else if(node->type == NT_RULE){
+		}else if(exprConvTypeToTerm(node->val.token->type) != E_VAL){
 			return 1; // Chyba
 		}
-		eRuleType type;
-		switch(node->val.token->type){
-			case T_ADD:
-				type = RT_ADD; break;
-			case T_SUB:
-				type = RT_SUB; break;
-			case T_MUL:
-				type = RT_MUL; break;
-			case T_DIV:
-				type = RT_DIV; break;
-			case T_EQL:
-				type = RT_EQL; break;
-			case T_NEQ:
-				type = RT_NEQ; break;
-			case T_LT:
-				type = RT_LT; break;
-			case T_GT:
-				type = RT_GT; break;
-			case T_LTE:
-				type = RT_LTE; break;
-			case T_GTE:
-				type = RT_GTE; break;
-			default: 
-				break;
-		}
-		newRule->type = type;
-		free(node);
-
-
-		node = exprStackPop(stack);
-		if(node->type == NT_RELATION){
-			return 1; // Chyba
-		}else if(node->type == NT_TOKEN){
-			if(exprConvTypeToTerm(node->val.token->type) != E_VAL){
-				return 1; // Chyba
-			}
-		}
-		newRule->lNode = node;
-
-
-		node = exprStackPop(stack);
-		if(node->type != NT_RELATION){
-			return 1; // Chyba
-		}
-		exprStackPush(stack, newNode);
 	}
+	newRule->rNode = node;
+
+	
+	node = exprStackPop(stack);
+	if(node->type == NT_RELATION){
+		// Hotovo
+		newRule->type = RT_VAL;
+		exprStackPush(stack, newNode);
+		return 0;
+	}else if(node->type == NT_RULE){
+		return 1; // Chyba
+	}
+	eRuleType type;
+	switch(node->val.token->type){
+		case T_ADD:
+			type = RT_ADD; break;
+		case T_SUB:
+			type = RT_SUB; break;
+		case T_MUL:
+			type = RT_MUL; break;
+		case T_DIV:
+			type = RT_DIV; break;
+		case T_EQL:
+			type = RT_EQL; break;
+		case T_NEQ:
+			type = RT_NEQ; break;
+		case T_LT:
+			type = RT_LT; break;
+		case T_GT:
+			type = RT_GT; break;
+		case T_LTE:
+			type = RT_LTE; break;
+		case T_GTE:
+			type = RT_GTE; break;
+		default: 
+			break;
+	}
+	newRule->type = type;
+	free(node);
+
+
+	node = exprStackPop(stack);
+	if(node->type == NT_RELATION){
+		return 1; // Chyba
+	}else if(node->type == NT_TOKEN){
+		if(exprConvTypeToTerm(node->val.token->type) != E_VAL){
+			return 1; // Chyba
+		}
+	}
+	newRule->lNode = node;
+
+
+	node = exprStackPop(stack);
+	if(node->type != NT_RELATION){
+		return 1; // Chyba
+	}
+	exprStackPush(stack, newNode);
 
 	return 0;
 }

@@ -32,7 +32,7 @@ int janchDebug(){
 	scannerGetTokenList(&token, source);
 
 	peNode tree;
-	exprParse(token, &tree);
+	exprParse(&token, &tree);
 	//tree->
 	
 	fclose(source);
