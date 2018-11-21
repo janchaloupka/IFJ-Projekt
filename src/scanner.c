@@ -338,15 +338,15 @@ bool _scannerIsKeyword(pToken token){
 	if(token->type != T_ID) return false;
 
 	tType newType = token->type;
-	if(strcmp((char*)token->data, "def") == 0) newType = T_DEF;
-	else if(strcmp((char*)token->data, "do") == 0) newType = T_DO;
-	else if(strcmp((char*)token->data, "else") == 0) newType = T_ELSE;
-	else if(strcmp((char*)token->data, "end") == 0) newType = T_END;
-	else if(strcmp((char*)token->data, "if") == 0) newType = T_IF;
-	else if(strcmp((char*)token->data, "not") == 0) newType = T_NOT;
-	else if(strcmp((char*)token->data, "nil") == 0) newType = T_NIL;
-	else if(strcmp((char*)token->data, "then") == 0) newType = T_THEN;
-	else if(strcmp((char*)token->data, "while") == 0) newType = T_WHILE;
+	if(strcmp(token->data, "def") == 0) newType = T_DEF;
+	else if(strcmp(token->data, "do") == 0) newType = T_DO;
+	else if(strcmp(token->data, "else") == 0) newType = T_ELSE;
+	else if(strcmp(token->data, "end") == 0) newType = T_END;
+	else if(strcmp(token->data, "if") == 0) newType = T_IF;
+	else if(strcmp(token->data, "not") == 0) newType = T_NOT;
+	else if(strcmp(token->data, "nil") == 0) newType = T_NIL;
+	else if(strcmp(token->data, "then") == 0) newType = T_THEN;
+	else if(strcmp(token->data, "while") == 0) newType = T_WHILE;
 
 	if(token->type != newType){
 		free(token->data);
@@ -500,7 +500,7 @@ void scannerPrintToken(pToken token){
 		case T_FLOAT:
 		case T_ID:
 		case T_IDFN:
-			printf("(%s)", (char*)token->data);
+			printf("(%s)", token->data);
 			break;
 		default:
 			break;

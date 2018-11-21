@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "parser.h"
 #include "scanner.h"
+#include "expressions.h"
 
 int main(int argc, char const *argv[]);
 

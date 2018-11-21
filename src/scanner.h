@@ -137,14 +137,12 @@ typedef enum{
  * Dá se použít jako obousměrný seznam
  */
 typedef struct Token{
-	tType type;	//!< Typ tokenu
-	void *data;	//!< Konkrétní hodnota tokenu
-				//!< Ukazatel na char* pokud je typ string nebo číslo
-				//!< Ukazatel na tabulku id pokud je typ id
-	unsigned int linePos;
-	unsigned int colPos;
-	struct Token *prevToken;
-	struct Token *nextToken;
+	tType type;					//!< Typ tokenu
+	char *data;					//!< Konkrétní hodnota tokenu
+	unsigned int linePos;		//!< Na kterém řádku se token nachází
+	unsigned int colPos;		//!< Na které pozici na řádku se token nachází
+	struct Token *prevToken;	//!< Ukazatel na předchozí token v listu
+	struct Token *nextToken;	//!< Ukazatel na další token v listu
 } *pToken;
 
 

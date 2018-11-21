@@ -2,7 +2,7 @@
 
 int main(int argc, char const *argv[])
 {
-	return yellDebug();
+	//return janchDebug();
 
 	if(argc > 1){
 		if(strcmp(argv[1], "j32") == 0) return janchDebug();
@@ -26,11 +26,16 @@ int yellDebug(){
 }
  
 int janchDebug(){
-	FILE *source = fopen("test-code.3", "r");
+	FILE *source = fopen("tests/test-expr", "r");
 	
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);
-	scannerPrintTokenList(token);
+
+	peNode tree;
+	exprParse(token, &tree);
+	//tree->
+	
 	fclose(source);
+	scannerFreeTokenList(&token);
 	return 0;
 }
