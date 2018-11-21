@@ -26,6 +26,11 @@ typedef struct {
 	int last;					// Index naposledy vloženého prvku
 } tStack;
 
+typedef struct tNode	{                     // Uzel stromu
+    tType type;
+    struct tNode **tChild;                    // Pole ukazatelů na tNode
+} *pNode;                                     // Ukazatel na uzel stromu
+
 /**
  * Vlastní tělo parseru, zatím má pouze kontrolovat syntax
  * 
@@ -41,7 +46,7 @@ int parser(pToken *List);
  * @param token Momentálně zpracovávaný token
  * @return bool Jsou-li typy ekvivalentní, vrací true
  */
-bool parserCompare(tStack S, pToken token);
+int parserCompare(tStack S, pToken token);
 
 /**
  * Je-li na zásobníku neterminál, podle tabulky LL gramatiky určí, jak jej dále derivovat, části vloží v pořadí na zásobník
@@ -50,7 +55,7 @@ bool parserCompare(tStack S, pToken token);
  * @param token Momentálně zpracovávaný token
  * @return int Jedna po chybě na stacku, jinak nula
  */
-int parserExpand(tStack *S, pToken *token, bool *correct, int *error);
+int parserExpand(tStack *S, pToken *token, int *correct, int *error);
 
 /**
  * Inicializuje zásobník, na první místo vloží type N_PROG jakožto výchozí stav
