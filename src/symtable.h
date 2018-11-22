@@ -1,31 +1,58 @@
-#include<stdio.h>
-#include<stdbool.h>
+#include <stdio.h>
+#include <stdbool.h>
 
-
-
-typedef struct Param{
-	int type;
-	char *id;
-	struct Param *next;
-}TParam;
+//typ id
+typedef enum{
+	NIL,
+	INT,
+	FLOAT,
+	STRING,
+	FUNC
+} sType;
 
 //data v uzlu
-typedef struct Data{
-	int type;
-	TParam *params;
+typedef struct sData{
+	sType type;
 	bool defined;
-}TData;
+	struct sTree *localFrame; 
+} *psData;
 
 //uzel stromu
-typedef struct Node{
+typedef struct sTree{
 	char *key;	
-	struct TData *data;
-	struct Node *lptr;
-	struct Node *rptr;
-}TNode;
+	struct sData *data;
+	struct sTree *lptr;
+	struct sTree *rptr;
+} *psTree;
 
-//seznam stromu
-typedef struct SymTab{
-	TNode *first; //ukazatel na koren prvniho stromu
-	struct SymTab *next; //ukazatel na dalsi strom
-}TSymTab;
+/**
+ * Inicializuje tabulku symbolů (binární vyhledávací strom) 
+ * 
+ * @param tree Ukazatel na strom pro inicializaci
+ */
+void symTabInit(psTree *tree);
+
+/**
+ * Vloží do stromu nový uzel s hodnotou data
+ * 
+ * @param tree Strom, do kterého se bude vkládat
+ * @param data Data pro vložení do stromu
+ * @return bool Pokud se vložení povedlo, vrací true
+ */
+bool symTabInsert(psTree *tree, char *key, psData data);
+
+/**
+ * Podle klíče vyhledá uzel ve stromě 
+ * 
+ * @param tree Strom, ve kterém se bude vyhledávat
+ * @param key Klíč uzlu, podle kterého se bude vyhledávat ve stromě
+ * @return psData Vrací data nalezeného uzlu
+ */
+psData symTabSearch(psTree *tree, char *key);
+
+/**
+ * Zruší celý strom (tabulku symbolů)
+ * 
+ * @param tree Strom pro zrušení
+ */
+void symTabDispose(psTree *tree);
