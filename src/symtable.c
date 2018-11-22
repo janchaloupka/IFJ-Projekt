@@ -13,13 +13,14 @@ void symTabInit(psTree *tree){
 bool symTabInsert(psTree *tree, char *key, psData data){
 	if(tree == NULL) return false;
 
-	while(*tree != NULL){
-		int cmp = strcmp(key, (*tree)->key);
+	psTree *node = tree;
+	while(*node != NULL){
+		int cmp = strcmp(key, (*node)->key);
 		
 		if(cmp < 0) 
-			tree = &(*tree)->lptr;
+			node = &(*node)->lptr;
 		else if(cmp > 0) 
-			tree = &(*tree)->rptr;
+			node = &(*node)->rptr;
 		else 
 			return false;
 	}
@@ -31,6 +32,8 @@ bool symTabInsert(psTree *tree, char *key, psData data){
 	newTree->key = key;
 	newTree->lptr = NULL;
 	newTree->rptr = NULL;
+
+	*node = newTree;
 
 	return true;
 }
