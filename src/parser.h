@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include "scanner.h"
+#include "symtable.h"
 
 #define STACK_CHUNK_SIZE 1000                      // Velikost alokační jednotky zásobníku
 
@@ -56,6 +57,42 @@ int parserCompare(tStack S, pToken token);
  * @return int Jedna po chybě na stacku, jinak nula
  */
 int parserExpand(tStack *S, pToken *token, int *correct, int *error);
+
+/**
+ * TODO
+ * 
+ * 
+ * 
+ * 
+ */
+int parserSemanticsPreRun(pToken *token, psTree *main_tree);
+
+/**
+ * TODO
+ * 
+ * 
+ * 
+ * 
+ */
+psData parserSemanticsInitData(sType type, bool defined, struct sTree *localFrame, int params);
+
+/**
+ * TODO
+ * 
+ * 
+ * 
+ * 
+ */
+void parserSemanticsInit(psTree *main_table);
+
+/**
+ * TODO
+ * 
+ * 
+ * 
+ * 
+ */
+int parserError(int error, int int_error, pToken *prevToken, tStack *S);
 
 /**
  * Inicializuje zásobník, na první místo vloží type N_PROG jakožto výchozí stav

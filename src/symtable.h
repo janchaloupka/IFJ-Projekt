@@ -3,10 +3,7 @@
 
 //typ id
 typedef enum{
-	NIL,
-	INT,
-	FLOAT,
-	STRING,
+	VAR,
 	FUNC
 } sType;
 
@@ -14,7 +11,8 @@ typedef enum{
 typedef struct sData{
 	sType type;
 	bool defined;
-	struct sTree *localFrame; 
+	struct sTree *localFrame;
+	int params; 
 } *psData;
 
 //uzel stromu

@@ -1,5 +1,5 @@
 print "Zadejte cislo pro vypocet faktorialu: "
-a = inputi(10, 20, nil)
+a = inputi
 if a < 0 then
 	print("\nFaktorial nelze spocitat\n")
 else
@@ -13,10 +13,26 @@ else
 	end
 	print "\nVysledek je:", vysl, "\n"
 end
-def bagr(a, b)
+def bagr(a, b, e)
+	z = 2
 	if nil then
 	else
 	end
-	while e do
+	while e < 2 do
 	end
 end
+def bagra(a,v,c,d,f,s,e)
+	if nil then
+	else
+	end
+	while e < 2 do
+	end
+end
+def bagraa(fgewg,e)
+	if nil then
+	else
+	end
+	while e < 2 do
+	end
+end
+

@@ -51,7 +51,8 @@
 <params>    -> <type> <params_n>
 <params>    -> id <params_n>
 <params>    -> ε
-<params_n>  -> , <params>
+<params_n>  -> , id <params_n> TODO
+<params_n>  -> , <type> <params_n> TODO
 <params_n>  -> ε
 
 //statement
