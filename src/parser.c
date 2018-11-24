@@ -8,9 +8,11 @@ int parser(pToken *List){
 	int error = 0;				// Chyba vstupního kódu
 	int int_error = 0;			// Interní chyba překladače
 	tStack S;					// Stack pro rekurzivní sestup
-	psTree main_table;			// Hlavní tabulka symbolů
-	symTabInit(&main_table);
-	parserSemanticsInit(&main_table);	// Naplnění tabulky built-in funkcema
+	psTree func_table;			// Hlavní tabulka definovaných funkcí
+	psTree var_table;			// Hlavní tabulka proměnných
+	symTabInit(&func_table);
+	symTabInit(&var_table);
+	parserSemanticsInit(&func_table);	// Naplnění tabulky built-in funkcema
 	int_error = parserStackInit(&S);
 
 	while(token != NULL){	// Syntaktická analýza + sémantické definice funkcí
@@ -23,7 +25,7 @@ int parser(pToken *List){
 
 		else{
 			if(!error) error = (parserCompare(S, token));	// Je-li na stacku s čím porovnávat
-			if(!error) error = (parserSemanticsPreRun(&token, &main_table));	// Naplnění tabulky definicí funkcí
+			if(!error) error = (parserSemanticsPreRun(&token, &func_table));	// Naplnění tabulky definicí funkcí
 			parserStackPop(&S, &int_error);
 			token = token->nextToken;
 		}
@@ -42,49 +44,51 @@ int parser(pToken *List){
 		pToken func;
 		psTree local_frame;
 
-		if(semanToken->type == T_DEF){
-			inFunc = true;
+		parserSemanticsInFunc(&inFunc, &inAux, semanToken);
+
+		if(inFunc && semanToken->type == T_DEF){	
+			local_frame = symTabSearch(&func_table, semanToken->nextToken->data)->localFrame; // Najdem local_frame v tabulce fukcí (definice již proběhly)
+			func = semanToken->nextToken;	// Identifikátor funkce po DEF
 		}
 
-		else if(semanToken->type == T_IF || semanToken->type == T_WHILE){
-			inAux++;
+		if(semanToken->type == T_ID && semanToken->nextToken->type == T_ASSIGN){	// Je-li to definice proměnné
+			if(!inFunc){					// A pokud nejsme nikde ve funkci
+				if(symTabSearch(&func_table, semanToken->data)){
+					printf("[SEMANTIC] Error: Variables and functions must have different IDs!\n");
+					error = 3;
+				}
+				symTabInsert(&var_table, semanToken->data, parserSemanticsInitData(VAR, NULL, 0));
+			}
+
+			else{							// Pokud jsme ve funkci
+				if(symTabSearch(&func_table, semanToken->data)){
+					printf("[SEMANTIC] Error: Can't name a variable same as a previously defined function!\n");
+					error = 3;
+				}
+				symTabInsert(&local_frame, semanToken->data, parserSemanticsInitData(VAR, NULL, 0));
+			}
 		}
 
-		else if(semanToken->type == T_END && !inAux){
-			inFunc = false;
-		}
+		else if(semanToken->type == T_ID){	// Je-li to osamocené ID, někde v expressionu
+			if(!inFunc){					// A pokud nejsme nikde ve funkci
+				psData data = symTabSearch(&var_table, semanToken->data);
 
-		else if(semanToken->type == T_END && inAux){
-			inAux--;
-		}
-
-		if(inFunc && semanToken->type == T_DEF){
-			local_frame = symTabSearch(&main_table, semanToken->nextToken->data)->localFrame;
-			func = semanToken->nextToken;
-		}
-
-		if(semanToken->type == T_ID && semanToken->nextToken->type == T_ASSIGN){
-			symTabInsert(&main_table, semanToken->data, parserSemanticsInitData(VAR, true, NULL, 0));
-		}
-
-		else if(semanToken->type == T_ID){
-			if(!inFunc){
-				psData data = symTabSearch(&main_table, semanToken->data);
-
-				if(data == NULL || (!data->defined)){
+				if(data == NULL){
 					printf("[SEMANTIC] Error: Undefined variable %s on line %u:%u!\n", semanToken->data, semanToken->linePos, semanToken->linePos);
 					error = 3;
 				}
 			}
-			else{
-				psData data = symTabSearch(&local_frame, semanToken->data);
 
-				if(func->linePos == semanToken->linePos){
-					symTabInsert(&local_frame, semanToken->data, parserSemanticsInitData(VAR, true, NULL, 0));
+			else{	// Pokud jsme ve funkci
+
+				if(func->linePos == semanToken->linePos){	// Pokud jsou to definice proměnných v hlavičce funkce
+					symTabInsert(&local_frame, semanToken->data, parserSemanticsInitData(VAR, NULL, 0));
 				}
 
 				else{
-					if((data == NULL || !(data->defined)) && (symTabSearch(&main_table, semanToken->data) == NULL || symTabSearch(&main_table, semanToken->data)->type != FUNC)){
+					psData data = symTabSearch(&local_frame, semanToken->data);
+					
+					if((data == NULL) && (symTabSearch(&func_table, semanToken->data) == NULL || symTabSearch(&func_table, semanToken->data)->type != FUNC)){
 						printf("[SEMANTIC] Error: Undefined variable %s on line %u:%u!\n", semanToken->data, semanToken->linePos, semanToken->linePos);
 						error = 3;
 					}
@@ -97,7 +101,8 @@ int parser(pToken *List){
 		semanToken = semanToken->nextToken;
 	}
 
-	symTabDispose(&main_table);
+	symTabDispose(&var_table);
+	symTabDispose(&func_table);
 	parserStackDelete(&S);
 	return 0;
 }
@@ -457,15 +462,15 @@ tType parserStackPop(tStack *S, int *int_error){
 	}	
 }
 
-int parserSemanticsPreRun(pToken *token, psTree *main_table){
+int parserSemanticsPreRun(pToken *token, psTree *func_table){
 	if((*token)->type == T_ID){
 
 		if((*token)->prevToken != NULL && (*token)->prevToken->type == T_DEF){
 			
-			if(!(symTabSearch(main_table, (*token)->data))){
+			if(!(symTabSearch(func_table, (*token)->data))){
 				psTree localFrame;
 				symTabInit(&localFrame);
-				psData data = parserSemanticsInitData(FUNC, true, localFrame, 0);
+				psData data = parserSemanticsInitData(FUNC, localFrame, 0);
 				pToken param = (*token)->nextToken->nextToken;
 
 				while(param != NULL){
@@ -474,7 +479,7 @@ int parserSemanticsPreRun(pToken *token, psTree *main_table){
 					}
 
 					else if(param->type == T_ID){
-						symTabInsert(&localFrame, param->data, parserSemanticsInitData(VAR, true, NULL, 0));
+						symTabInsert(&localFrame, param->data, parserSemanticsInitData(VAR, NULL, 0));
 						param = param->nextToken;
 						data->params++;
 					}
@@ -486,7 +491,7 @@ int parserSemanticsPreRun(pToken *token, psTree *main_table){
 					else break;
 				}
 
-				symTabInsert(main_table, (*token)->data, data);
+				symTabInsert(func_table, (*token)->data, data);
 			}
 
 			else{
@@ -499,25 +504,42 @@ int parserSemanticsPreRun(pToken *token, psTree *main_table){
 	return 0;
 }
 
-psData parserSemanticsInitData(sType type, bool defined, struct sTree *localFrame, int params){
+psData parserSemanticsInitData(sType type, struct sTree *localFrame, int params){
 	psData data = malloc(sizeof(struct sData));
-	data->defined = defined;
 	data->type = type;
 	data->localFrame = &(*localFrame);
 	data->params = params;
 	return data;
 }
 
-void parserSemanticsInit(psTree *main_table){
-	symTabInsert(main_table, "print", parserSemanticsInitData(FUNC, true, NULL, -1));
-	symTabInsert(main_table, "inputs", parserSemanticsInitData(FUNC, true, NULL, 0));
-	symTabInsert(main_table, "inputi", parserSemanticsInitData(FUNC, true, NULL, 0));
-	symTabInsert(main_table, "inputf", parserSemanticsInitData(FUNC, true, NULL, 0));
-	symTabInsert(main_table, "length", parserSemanticsInitData(FUNC, true, NULL, 1));
-	symTabInsert(main_table, "substr", parserSemanticsInitData(FUNC, true, NULL, 3));
-	symTabInsert(main_table, "ord", parserSemanticsInitData(FUNC, true, NULL, 2));
-	symTabInsert(main_table, "chr", parserSemanticsInitData(FUNC, true, NULL, 1));
+void parserSemanticsInit(psTree *func_table){
+	symTabInsert(func_table, "print", parserSemanticsInitData(FUNC, NULL, -1));
+	symTabInsert(func_table, "inputs", parserSemanticsInitData(FUNC, NULL, 0));
+	symTabInsert(func_table, "inputi", parserSemanticsInitData(FUNC, NULL, 0));
+	symTabInsert(func_table, "inputf", parserSemanticsInitData(FUNC, NULL, 0));
+	symTabInsert(func_table, "length", parserSemanticsInitData(FUNC, NULL, 1));
+	symTabInsert(func_table, "substr", parserSemanticsInitData(FUNC, NULL, 3));
+	symTabInsert(func_table, "ord", parserSemanticsInitData(FUNC, NULL, 2));
+	symTabInsert(func_table, "chr", parserSemanticsInitData(FUNC, NULL, 1));
 	return;
+}
+
+void parserSemanticsInFunc(bool *inFunc, int *inAux, pToken semanToken){
+	if(semanToken->type == T_DEF){
+		*inFunc = true;
+	}
+
+	else if(semanToken->type == T_IF || semanToken->type == T_WHILE){
+		*inAux = *inAux + 1;
+	}
+
+	else if(semanToken->type == T_END && !(*inAux)){
+		*inFunc = false;
+	}
+
+	else if(semanToken->type == T_END && *inAux){
+		*inAux = *inAux - 1;
+	}
 }
 
 int parserError(int error, int int_error, pToken *prevToken, tStack *S){

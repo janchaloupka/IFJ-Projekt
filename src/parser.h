@@ -74,7 +74,7 @@ int parserSemanticsPreRun(pToken *token, psTree *main_tree);
  * 
  * 
  */
-psData parserSemanticsInitData(sType type, bool defined, struct sTree *localFrame, int params);
+psData parserSemanticsInitData(sType type, struct sTree *localFrame, int params);
 
 /**
  * TODO
@@ -93,6 +93,15 @@ void parserSemanticsInit(psTree *main_table);
  * 
  */
 int parserError(int error, int int_error, pToken *prevToken, tStack *S);
+
+/**
+ * TODO
+ * 
+ * 
+ * 
+ * 
+ */
+void parserSemanticsInFunc(bool *inFunc, int *inAux, pToken semanToken);
 
 /**
  * Inicializuje zásobník, na první místo vloží type N_PROG jakožto výchozí stav

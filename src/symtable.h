@@ -10,7 +10,6 @@ typedef enum{
 //data v uzlu
 typedef struct sData{
 	sType type;
-	bool defined;
 	struct sTree *localFrame;
 	int params; 
 } *psData;
