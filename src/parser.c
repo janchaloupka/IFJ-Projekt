@@ -69,6 +69,46 @@ int parser(pToken *List){
 			}
 		}
 
+		// Nechutně složitá podmínka, ve zkratce znamená "Pokud voláme funkci", zrefaktoruju
+		else if((semanToken->type == T_ID && symTabSearch(&func_table, semanToken->data)) || (semanToken->type == T_ID && semanToken->prevToken->type != T_DEF && (semanToken->nextToken->type == T_LBRCKT || semanToken->nextToken->type == T_ID || semanToken->nextToken->type == T_FLOAT || semanToken->nextToken->type == T_STRING || semanToken->nextToken->type == T_INTEGER || semanToken->nextToken->type == T_NIL))){
+			if(symTabSearch(&func_table, semanToken->data)){	// Pokud je definovaná
+				
+				psData func_data = symTabSearch(&func_table, semanToken->data);
+				pToken param = NULL;
+				if(semanToken->nextToken->type == T_LBRCKT) param = semanToken->nextToken->nextToken;
+				else param = semanToken->nextToken;
+				int params = 0;
+
+				while(param->type != T_EOL && param->type != T_RBRCKT){	// Spočítáme parametry
+
+					if(param->data != NULL && (symTabSearch(&func_table, param->data))){
+						printf("[SEMANTIC] Error: Function %s can't have another function as an argument!\n", semanToken->data);
+						error = 3;
+						break;
+					}
+
+					if(param->type == T_COMMA){
+						param = param->nextToken;
+					}
+
+					else if(param->type == T_ID || param->type == T_INTEGER || param->type == T_STRING || param->type == T_FLOAT || param->type == T_NIL){
+						param = param->nextToken;
+						params++;
+					}
+				}
+
+				if(params != func_data->params && error != 3){
+					printf("[SEMANTIC] Error: Wrong number of arguments in function %s!\n", semanToken->data);
+					error = 3;
+				}
+			}
+
+			else{
+				printf("[SEMANTIC] Error: Calling an undefined function %s on line %u:%u!\n", semanToken->data, semanToken->linePos, semanToken->linePos);
+				error = 3;
+			}
+		}
+
 		else if(semanToken->type == T_ID){	// Je-li to osamocené ID, někde v expressionu
 			if(!inFunc){					// A pokud nejsme nikde ve funkci
 				psData data = symTabSearch(&var_table, semanToken->data);
