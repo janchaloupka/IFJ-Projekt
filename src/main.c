@@ -10,11 +10,13 @@ int main(int argc, char const *argv[])
 		if(strcmp(argv[1], "yell") == 0) return yellDebug();
 	}
 	
+	//return yellDebug();
+
 	return 0;
 }
 
 int yellDebug(){
-	FILE *source = fopen("test-code", "r");
+	FILE *source = fopen("tests/test-code", "r"); //TODO muj_input13
 	
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);

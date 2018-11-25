@@ -96,8 +96,9 @@ int parser(pToken *List){
 						params++;
 					}
 				}
+				if(func_data->params == -1 && params >= 1){}
 
-				if(params != func_data->params && error != 3){
+				else if(params != func_data->params && error != 3){
 					printf("[SEMANTIC] Error: Wrong number of arguments in function %s!\n", semanToken->data);
 					error = 3;
 				}
