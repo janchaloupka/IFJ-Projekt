@@ -16,13 +16,30 @@ int main(int argc, char const *argv[])
 }
 
 int yellDebug(){
-	FILE *source = fopen("tests/test-code", "r"); //TODO muj_input13
+	FILE *source1 = fopen("tests/test-code.1", "r");
+	FILE *source2 = fopen("tests/test-code.2", "r");
+	FILE *source3 = fopen("tests/test-code.3", "r");
 	
-	pToken token = NULL;
-	scannerGetTokenList(&token, source);
-	parser(&token);
-	fclose(source);
-	scannerFreeTokenList(&token);
+	pToken token1 = NULL;
+	pToken token2 = NULL;
+	pToken token3 = NULL;
+
+	scannerGetTokenList(&token1, source1);
+	parser(&token1);
+	fclose(source1);
+	scannerFreeTokenList(&token1);
+	_scannerFSM(NULL, NULL);
+
+	scannerGetTokenList(&token2, source2);
+	parser(&token2);
+	fclose(source2);
+	scannerFreeTokenList(&token2);
+	_scannerFSM(NULL, NULL);
+
+	scannerGetTokenList(&token3, source3);
+	parser(&token3);
+	fclose(source3);
+	scannerFreeTokenList(&token3);
 
 	return 0;
 }

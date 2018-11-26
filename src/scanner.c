@@ -49,7 +49,6 @@ int _scannerFSM(FILE *file, pToken token){
 	sState state = STATE_START;
 	sState nextState;
 	
-	token->type = T_UNKNOWN;
 
 	bool isActive = true;
 	static unsigned int linePos = 0;
@@ -57,6 +56,14 @@ int _scannerFSM(FILE *file, pToken token){
 	static int currChar = -2;
 	if(currChar == -2) currChar = EOL;
 
+	if(file == NULL){
+		linePos = 0;
+		colPos = 1;
+		currChar = -2;
+		return 0;
+	}
+
+	token->type = T_UNKNOWN;
 	token->colPos = colPos;
 	token->linePos = linePos;
 	
