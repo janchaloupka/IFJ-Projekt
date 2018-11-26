@@ -19,7 +19,7 @@ int parser(pToken *List){
 
 	parserSemanticsInitBuiltIn(&funcTable);	// Naplnění tabulky built-in funkcema
 
-	SyntaxStack S;						// Stack pro rekurzivní sestup
+	SyntaxStack S;							// Stack pro rekurzivní sestup
 	pSemanticsStack semanticError;			// Stack sémantických chyb
 
 	parserSyntaxStackInit(&S, &internalError);
@@ -56,13 +56,23 @@ int parser(pToken *List){
 		else{
 			parserSyntaxCompare(S, token, &error);	// Je-li na stacku s čím porovnávat
 			parserSyntaxStackPop(&S, &internalError);
+			parserSyntaxIDFNCheck(token, &funcTable, &error);	// Kontrola ? a ! na konci proměnných
 
 			token = token->nextToken;
 			tokenChecked = false;	// Nový token pro sémantickou analýzu
 		}
 
 		error = parserSyntaxError(error, internalError, &prevToken, &S);
-		if(error) return error;
+		if(error){
+			
+			// Úklid
+
+			symTabDispose(&varTable);
+			symTabDispose(&funcTable);
+			parserSemanticStackDelete(&semanticError);
+			parserSyntaxStackDelete(&S);
+			return error;
+		} 
 	}
 
 	error = parserSemanticError(semanticError);	// Došli jsme až sem, syntax je tedy správně, pokud jsou sémantické chyby, měly by i dávat smysl
@@ -76,13 +86,16 @@ int parser(pToken *List){
 	return error;
 }
 
+
+
+
 /******************************************************SYNTAX******************************************************************************/
 
 void parserSyntaxCompare(SyntaxStack S, pToken token, int *error){
 	if (S.a[S.last] == token->type){
 
 	}
-	else *error = 2;
+	else if(!*error) *error = 2;
 }
 
 void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError){
@@ -114,7 +127,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPush(&(*S), T_EOF, internalError);
 		}
 		
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_BODY){
@@ -191,7 +204,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPop(&(*S), internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_TYPE){
@@ -215,7 +228,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPush(&(*S), T_FLOAT, internalError);	
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_DEFUNC){
@@ -231,7 +244,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 				parserSyntaxStackPush(&(*S), T_DEF, internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_FUNC){
@@ -292,7 +305,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPush(&(*S), T_IF, internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_WHILE){
@@ -306,7 +319,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPush(&(*S), T_WHILE, internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_DEFVAR){
@@ -326,7 +339,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPush(&(*S), N_EXPR, internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_DEFVARID){
@@ -383,7 +396,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 	}
 
 	else{
-		*internalError = 2;	// Neočekávaný token na stacku
+		if (!*internalError) *internalError = 2;	// Neočekávaný token na stacku
 	}
 }
 
@@ -405,7 +418,12 @@ int parserSyntaxError(int error, int internalError, pToken *prevToken, SyntaxSta
 				return 2;
 			}
 
-			else if(error == 69){	//Syntaktický error expressionu
+			else if(error == 32){	//Syntaktický error expressionu
+				return 2;
+			}
+
+			else if(error == 69){
+				fprintf(stderr, "[SYNTAX] Error: Only function names can end with \"!\" and \"?\" symbols!\n");
 				return 2;
 			}
 
@@ -423,6 +441,15 @@ int parserSyntaxError(int error, int internalError, pToken *prevToken, SyntaxSta
 	return 0;
 }
 
+void parserSyntaxIDFNCheck(pToken token, psTree *funcTable, int *error){
+	if(token->type == T_ID && (token->data[strlen(token->data) - 1] == '!' || token->data[strlen(token->data) - 1] == '?'))
+		if(!symTabSearch(funcTable, token->data))
+			if(!*error) *error = 69;
+}
+
+
+
+
 /*******************************************************STACK*****************************************************************************/
 
 void parserSyntaxStackInit(SyntaxStack *S, int *internalError){
@@ -431,7 +458,7 @@ void parserSyntaxStackInit(SyntaxStack *S, int *internalError){
 
 	if(!(S->a = malloc(STACK_CHUNK_SIZE * sizeof(tType)))){
 		fprintf(stderr, "[INTERNAL ERROR]: Failed malloc during stack initialization!\n");
-		*internalError = 1;
+		if (!*internalError) *internalError = 1;
 	}
 
 	S->size = STACK_CHUNK_SIZE;
@@ -448,7 +475,7 @@ void parserSyntaxStackPush(SyntaxStack *S, tType type, int *internalError){
 		S->a = realloc(S->a, S->size * sizeof(tType));
 		if(S->a == NULL){
 			fprintf(stderr, "[INTERNAL ERROR]: Failed malloc during stack expansion!\n");
-			*internalError = 1;
+			if (!*internalError) *internalError = 1;
 		}
 	}
 	
@@ -460,7 +487,7 @@ void parserSyntaxStackPush(SyntaxStack *S, tType type, int *internalError){
 tType parserSyntaxStackPop(SyntaxStack *S, int *internalError){
 	if (S->top==0) {
 		fprintf(stderr, "[INTERNAL ERROR]: Stack underflow!\n");
-		*internalError = 1;
+		if (!*internalError) *internalError = 1;
 		return(T_UNKNOWN);
 	}	
 	else {
@@ -468,6 +495,9 @@ tType parserSyntaxStackPop(SyntaxStack *S, int *internalError){
 		return(S->a[S->top--]); 
 	}	
 }
+
+
+
 
 /*****************************************************SÉMANTIKA***************************************************************************/
 
@@ -696,12 +726,15 @@ int parserSemanticError(pSemanticsStack semanticError){
 	return error;
 }
 
+
+
+
 /*******************************************************STACK*****************************************************************************/
 
 void parserSemanticStackInit(pSemanticsStack *S, int *internalError){
 	if(!S) return;
 	if(!(*S = malloc(sizeof(struct SemanticsStack)))){
-		*internalError = 2;
+		if (!*internalError) *internalError = 2;
 	}
 
 	(*S)->ErrorArray = NULL;
@@ -715,7 +748,7 @@ void parserSemanticStackDelete(pSemanticsStack *S){
 
 void parserSemanticStackPush(pSemanticsStack S, int error, char *name, int *internalError, int line, int col){
 	if(!(S->ErrorArray = realloc(S->ErrorArray, sizeof(struct Error) * (S->top + 1)))){
-		*internalError = 2;
+		if (!*internalError) *internalError = 2;
 	}
 
 	else{

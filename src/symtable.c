@@ -10,8 +10,8 @@ void symTabInit(psTree *tree){
 		*tree = NULL;
 }
 
-bool symTabInsert(psTree *tree, char *key, psData data){
-	if(tree == NULL) return false;
+void symTabInsert(psTree *tree, char *key, psData data){
+	if(tree == NULL) return;
 
 	psTree *node = tree;
 	while(*node != NULL){
@@ -21,8 +21,11 @@ bool symTabInsert(psTree *tree, char *key, psData data){
 			node = &(*node)->lptr;
 		else if(cmp > 0) 
 			node = &(*node)->rptr;
-		else 
-			return false;
+		else{
+			free((*node)->data);
+			(*node)->data = data;
+			return;
+		}
 	}
 
 	psTree newTree = malloc(sizeof(struct sTree));
@@ -34,8 +37,6 @@ bool symTabInsert(psTree *tree, char *key, psData data){
 	newTree->rptr = NULL;
 
 	*node = newTree;
-
-	return true;
 }
 
 psData symTabSearch(psTree *tree, char *key){

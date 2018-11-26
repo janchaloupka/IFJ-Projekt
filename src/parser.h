@@ -7,10 +7,6 @@
  * @date 2018-11-16
  */
 
-// TODO Fixni využívání tokenu NOT
-// TODO Fixni error, když je přiřazení místo expressionu např. ve while cyklu
-// TODO Fixni využití identifikátoru IDFN
-
 #pragma once
 #include <stdlib.h>
 #include <string.h>
@@ -89,6 +85,15 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
  * @return Návratová hodnota užita jako návratová hodnota parseru
  */
 int parserSyntaxError(int error, int internalError, pToken *prevToken, SyntaxStack *S);
+
+/**
+ * Kontrola, jestli nepoužíváme proměnné s vykřičníkem/otazníkem na konci
+ * 
+ * @param token Token, kterému kontrolujeme (konkrétně ID) data string pro přítomnost !/? na konci
+ * @param funcTable Tabulka funkcí, kde by se mělo ID s vykřičníkem/otazníkem nacházet
+ * @param error Zapíšeme 69, pokud se nenachází v tabulce IDček
+ */
+void parserSyntaxIDFNCheck(pToken token, psTree *funcTable, int *error);
 
 
 
