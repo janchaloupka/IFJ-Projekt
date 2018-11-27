@@ -50,7 +50,8 @@ int parser(pToken *List){
 		}
 
 		if(S.a[S.last] > T_STRING){
-			parserSyntaxExpand(&S, &token, &error, &internalError);	// Je-li na stacku neterminál
+			if(!inFunc) localTable = varTable;
+			parserSyntaxExpand(&S, &token, &error, &internalError, localTable);	// Je-li na stacku neterminál
 		}
 
 		else{
@@ -98,7 +99,7 @@ void parserSyntaxCompare(SyntaxStack S, pToken token, int *error){
 	else if(!*error) *error = 2;
 }
 
-void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError){
+void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError, psTree localTable){
 	if(S->a[S->last] == N_PROG){
 		if((*token)->type == T_ID ||
 		(*token)->type == T_NIL ||
@@ -370,8 +371,8 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 
 	else if(S->a[S->last] == N_EXPR_O){
 		*token = (*token)->prevToken;
-		if(exprParse(&(*token), NULL)) 
-			*error = 69;
+		if(exprParse(&(*token), localTable)) 
+			*error = 32;
 
 		if((*token)->type == T_EOL ||
 		(*token)->type == T_EOF){
@@ -382,8 +383,8 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 	}
 
 	else if(S->a[S->last] == N_EXPR){
-		if (exprParse(&(*token), NULL)) 
-			*error = 69;
+		if (exprParse(&(*token), localTable)) 
+			*error = 32;
 
 		if((*token)->type == T_EOL ||
 		(*token)->type == T_THEN ||
@@ -519,9 +520,9 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, pSemanticsStack sem
 		if((*token)->prevToken != NULL && (*token)->prevToken->type == T_DEF){
 			
 			if(!(symTabSearch(funcTable, (*token)->data))){
-				psTree localFrame;
-				symTabInit(&localFrame);
-				psData data = parserSemanticsInitData(FUNC, localFrame, 0);
+				psTree localTable;
+				symTabInit(&localTable);
+				psData data = parserSemanticsInitData(FUNC, localTable, 0);
 				pToken param;
 				if((*token)->nextToken != NULL) param = (*token)->nextToken->nextToken;
 
@@ -531,7 +532,7 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, pSemanticsStack sem
 					}
 
 					else if(param->type == T_ID){
-						symTabInsert(&localFrame, param->data, parserSemanticsInitData(VAR, NULL, 0));
+						symTabInsert(&localTable, param->data, parserSemanticsInitData(VAR, NULL, 0));
 						param = param->nextToken;
 						data->params++;
 					}
@@ -652,10 +653,10 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 
 }
 
-psData parserSemanticsInitData(sType type, struct sTree *localFrame, int params){
+psData parserSemanticsInitData(sType type, struct sTree *localTable, int params){
 	psData data = malloc(sizeof(struct sData));
 	data->type = type;
-	data->localFrame = &(*localFrame);
+	data->localFrame = &(*localTable);
 	data->params = params;
 	return data;
 }

@@ -54,6 +54,9 @@ typedef struct Error{
  */
 int parser(pToken *List);
 
+
+
+
 /******************************************************SYNTAX******************************************************************************/
 
 /**
@@ -72,8 +75,9 @@ void parserSyntaxCompare(SyntaxStack S, pToken token, int *error);
  * @param token Momentálně zpracovávaný token
  * @param error Ukazatel na integerovou error hodnotu, do které zapíše dvojku, dojde-li k syntaktickému erroru
  * @param internalError Ukazatel na integerovou error hodnotu, kterou předává stackovým funkcím, k zapsání selhání malloců
+ * @param localTable Předává se funkci exprParse
  */
-void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError);
+void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError, psTree localTable);
 
 /**
  * Vyhodnocení chyb po každém novém cyklu, výstupní hodnota využita i jako návratová hodnota parseru (a potažmo celého programu)
