@@ -117,7 +117,7 @@ int exprParse(pToken *token, psTree idTable){
 				{
 					int retval = exprStackParse(stack, idTable);
 					if(retval > 0){
-						fprintf(stderr, "Nesouhlasí gramatika expr\n");
+						fprintf(stderr, "Nesouhlasí gramatika expr (errid: %d)\n", retval);
 						return retval;
 					}
 				}

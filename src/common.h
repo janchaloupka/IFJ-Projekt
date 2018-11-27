@@ -30,3 +30,5 @@ char *nilToInterpret();
 char *varToInterpret(char *id);
 
 char *funcToInterpret(char *id);
+
+void generateBaseCode();

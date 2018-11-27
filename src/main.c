@@ -46,13 +46,21 @@ int yellDebug(){
 int janchDebug(){
 	FILE *source = fopen("tests/test-expr", "r");
 	
+	psTree localId;
+	symTabInit(&localId);
+	psData data = malloc(sizeof(struct sData));
+	data->localFrame = NULL;
+	symTabInsert(&localId, "a", data);
+
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);
-	printf(".IFJcode18\nDEFVAR GF@$tmp\nCLEARS\n\n");
-	exprParse(&token, NULL);
+	generateBaseCode();
+	printf("CREATEFRAME\nPUSHFRAME\nDEFVAR LF@a\nMOVE LF@a bool@true\n");
+	exprParse(&token, localId);
 	printf("\nPOPS GF@$tmp\nWRITE GF@$tmp\n");
 	
 	fclose(source);
 	scannerFreeTokenList(&token);
+	symTabDispose(&localId);
 	return 0;
 }
