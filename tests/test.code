@@ -1,0 +1,102 @@
+.IFJcode18
+
+DEFVAR GF@$_line
+DEFVAR GF@$_col
+DEFVAR GF@$tmp
+JUMP $main
+
+LABEL $checkIfBool
+	CALL $getType
+	JUMPIFNEQ $printTypeError TF@%return string@bool
+	RETURN
+
+LABEL $checkIfLtGt
+	CALL $getType	
+	JUMPIFEQ $checkIfLtGt$end TF@%return string@string
+	JUMPIFEQ $checkIfLtGt$end TF@%return string@int
+	JUMPIFNEQ $printTypeError TF@%return string@float
+	LABEL $checkIfLtGt$end
+	RETURN
+
+LABEL $checkIfEql
+	CALL $getType
+	
+	JUMPIFNEQ $decideEqlOp$diff TF@%return string@different
+	PUSHS TF@rv
+	PUSHS TF@lv
+	RETURN
+
+	LABEL $decideEqlOp$diff
+	PUSHS bool@false
+	PUSHS bool@false
+	RETURN
+
+LABEL $decideDivOp
+	JUMPLIFEQ $decideDivOp$float TF@%return string@float
+	IDIVS
+	RETURN
+	LABEL $decideDivOp$float
+	DIVS
+	RETURN
+
+LABEL $checkIfNum
+	CALL $getType	
+	JUMPIFEQ $checkIfNum$end TF@%return string@int
+	JUMPIFNEQ $printTypeError TF@%return string@float
+	LABEL $checkIfNum$end
+	RETURN
+
+LABEL $getType
+	CREATEFRAME
+	DEFVAR TF@%return
+	DEFVAR TF@lv
+	DEFVAR TF@lt
+	DEFVAR TF@rv
+	DEFVAR TF@rt
+	POPS TF@rv
+	POPS TF@lv
+	TYPE TF@lt TF@lv
+	TYPE TF@rt TF@rv
+
+	# defaultne nejsou stejneho typu
+	MOVE TF@%return string@different
+	
+	JUMPIFEQ $getType$if$1$1 TF@lt TF@rt
+	JUMPIFEQ $getType$if$1$2 TF@lt string@int
+	JUMPIFEQ $getType$if$1$3 TF@rt string@int
+	JUMP $getType$if$1$end
+	LABEL $getType$if$1$1 # jsou stejneho typu
+		MOVE TF@%return TF@lt
+	JUMP $getType$if$1$end
+	LABEL $getType$if$1$2 # lt je int
+		JUMPIFNEQ $getType$if$2 TF@rt string@float
+			MOVE TF@%return TF@rt
+			INT2FLOAT TF@lt TF@lt
+		JUMP $getType$if$2
+	JUMP $getType$if$1$end
+	LABEL $getType$if$1$3 # rt je int
+		JUMPIFNEQ $getType$if$3 TF@lt string@float
+			MOVE TF@%return TF@lt
+			INT2FLOAT TF@rt TF@rt
+		JUMP $getType$if$3
+	LABEL $getType$if$1$end
+
+	PUSHS TF@lv
+	PUSHS TF@rv
+	RETURN
+
+LABEL $printTypeError
+	WRITE string@\010[RUNTIME]\032Error\032on\032line\032
+	WRITE GF@$_LINE
+	WRITE string@:
+	WRITE GF@$_COL
+	WRITE string@\032-\032Type\032error;\032incompatible\032types\032(
+	WRITE TF@lt
+	WRITE string@\032with\032
+	WRITE TF@rt
+	EXIT int@4
+
+
+# Konec preddefinovanych funkci
+LABEL $main
+

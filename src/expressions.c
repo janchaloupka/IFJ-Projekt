@@ -1,7 +1,7 @@
 #include "expressions.h"
 
 
-eTerm exprConvTypeToTerm(tType tokenType){
+eRelTerm exprConvTypeToTerm(tType tokenType){
 	switch(tokenType){
 		case T_MUL:
 		case T_DIV:
@@ -9,6 +9,11 @@ eTerm exprConvTypeToTerm(tType tokenType){
 		case T_ADD:
 		case T_SUB:
 			return E_ADDSUB;
+		case T_NOT:
+			return E_NOT;
+		case T_AND:
+		case T_OR:
+			return E_ANDOR;
 		case T_LT:
 		case T_GT:
 		case T_LTE:
@@ -25,6 +30,8 @@ eTerm exprConvTypeToTerm(tType tokenType){
 		case T_FLOAT:
 		case T_STRING:
 		case T_ID:
+		case T_TRUE:
+		case T_FALSE:
 		case T_NIL:
 			return E_VAL;
 		default:
@@ -33,89 +40,115 @@ eTerm exprConvTypeToTerm(tType tokenType){
 }
 
 
-eRelation exprGetRelation(eTerm currTerm, eTerm newTerm){
+eRelation exprGetRelation(eRelTerm currTerm, eRelTerm newTerm){
 	switch(currTerm){
 		case E_MULDIV:
-			if(newTerm == E_LB || newTerm == E_VAL)
-				return OPEN;
-			return CLOSE;
+			if(newTerm == E_NOT)
+				return E_EMPTY;
+			else if(newTerm == E_LB || newTerm == E_VAL)
+				return E_OPEN;
+			return E_CLOSE;
 		case E_ADDSUB:
-			if(newTerm == E_LB || newTerm == E_VAL || newTerm == E_MULDIV)
-				return OPEN;
-			return CLOSE;
-		case E_LTGT:
-			if(newTerm == E_EQL || newTerm == E_RB || newTerm == E_$) 
-				return CLOSE;
-			else if(newTerm == E_LTGT) return ERROR;
-			return OPEN;
-		case E_EQL:
+			if(newTerm == E_NOT)
+				return E_EMPTY;
+			else if(newTerm == E_LB || newTerm == E_VAL || newTerm == E_MULDIV)
+				return E_OPEN;
+			return E_CLOSE;
+		case E_NOT:
+			if(newTerm == E_RB || newTerm == E_$ || newTerm == E_ANDOR)
+				return E_CLOSE;
+			return E_OPEN;
+		case E_ANDOR:
 			if(newTerm == E_RB || newTerm == E_$)
-				return CLOSE;
-			else if(newTerm == E_EQL) return ERROR;
-			return OPEN;
+				return E_CLOSE;
+			return E_OPEN;
+		case E_LTGT:
+			if(newTerm == E_EQL || newTerm == E_RB || newTerm == E_$ || newTerm == E_ANDOR) 
+				return E_CLOSE;
+			else if(newTerm == E_LTGT) return E_EMPTY;
+			return E_OPEN;
+		case E_EQL:
+			if(newTerm == E_RB || newTerm == E_$ || newTerm == E_ANDOR)
+				return E_CLOSE;
+			else if(newTerm == E_EQL) return E_EMPTY;
+			return E_OPEN;
 		case E_LB:
-			if(newTerm == E_RB) return EQUAL;
-			else if(newTerm == E_$) return ERROR;
-			return OPEN;
-		case E_RB:
+			if(newTerm == E_RB) return E_EQUAL;
+			else if(newTerm == E_$) return E_EMPTY;
+			return E_OPEN;
 		case E_VAL:
-			if(newTerm == E_LB || newTerm == E_VAL)
-				return ERROR;
-			return CLOSE;
+		case E_RB:
+			if(newTerm == E_LB || newTerm == E_VAL || newTerm == E_NOT)
+				return E_EMPTY;
+			return E_CLOSE;
 		case E_$:
 			if(newTerm == E_RB || newTerm == E_$)
-				return ERROR;
-			return OPEN;
+				return E_EMPTY;
+			return E_OPEN;
 	}
 
-	return ERROR;
+	return E_EMPTY;
 }
 
-int exprParse(pToken *token, peNode *nodeTree){
+int exprParse(pToken *token, psTree idTable){
 	peStack stack;
 	exprStackInit(&stack);
 
 	while(true){
-		eTerm stackT, newT;
+		eRelTerm stackT, newT;
 
-		int termPos = exprStackFirstTermPos(stack);
+		int termPos = exprStackFindTerm(stack);
 		if(termPos < 0) stackT = E_$;
-		else stackT = exprConvTypeToTerm(stack->s[termPos]->val.token->type);
+		else stackT = exprConvTypeToTerm(stack->s[termPos]->val.term->type);
 		newT = exprConvTypeToTerm((*token)->type);
-		eRelation rel = exprGetRelation(stackT, newT);
-
-		peNode node;
-		switch(rel){
-			case OPEN:
+		
+		peItem item;
+		switch(exprGetRelation(stackT, newT)){
+			case E_OPEN:
 				exprStackInsertOpen(stack, termPos + 1);
-				node = malloc(sizeof(struct eNode));
-				node->type = NT_TOKEN;
-				node->val.token = *token;
+				item = malloc(sizeof(struct eItem));
+				item->type = IT_TERM;
+				item->val.term = *token;
 
-				exprStackPush(stack, node);
+				exprStackPush(stack, item);
 				*token = (*token)->nextToken;
 				break;
-			case CLOSE:
-				if(1 == exprStackToRule(stack)){
-					fprintf(stderr, "Nesouhlasí gramatika expr\n");
-					return 2;
+			case E_CLOSE:
+				{
+					int retval = exprStackParse(stack, idTable);
+					if(retval > 0){
+						fprintf(stderr, "Nesouhlasí gramatika expr\n");
+						return retval;
+					}
 				}
 				break;
-			case EQUAL:
-				node = malloc(sizeof(struct eNode));
-				node->type = NT_TOKEN;
-				node->val.token = *token;
+			case E_EQUAL:
+				item = malloc(sizeof(struct eItem));
+				item->type = IT_TERM;
+				item->val.term = *token;
 
-				exprStackPush(stack, node);
+				exprStackPush(stack, item);
 				*token = (*token)->nextToken;
 				break;
-			case ERROR:
+			case E_EMPTY:
 				if(stackT == newT && stackT == E_$){
-					if(nodeTree != NULL)
-						*nodeTree = stack->s[stack->top];
+					if(stack->top < 0){
+						fprintf(stderr, "Expr nemuze byt prazdnej pyco\n");
+						return 2;
+					}
+					
 					return 0;
 				}
-				fprintf(stderr, "Nastala chyba při persování expr: %d->%d\n", stackT, newT);
+				
+				fprintf(stderr, "[SYNTAX] Error on line %d:%d - ", (*token)->linePos, (*token)->colPos);
+				
+				if(termPos < 0)
+					fprintf(stderr, "Expression cannot start with %s\n", scannerTypeToString((*token)->type));
+				else 
+					fprintf(stderr, "%s in expression cannot be followed with %s\n",
+						scannerTypeToString(stack->s[termPos]->val.term->type),
+						scannerTypeToString((*token)->type)
+					);
 				return 2;
 		}
 	}
@@ -126,33 +159,32 @@ void exprStackInit(peStack *stack){
 	if(stack == NULL) return;
 	*stack = malloc(sizeof(struct eStack));
 	(*stack)->size = EXPR_STACK_CHUNK_SIZE;
-	(*stack)->s = malloc(sizeof(peNode) * EXPR_STACK_CHUNK_SIZE);
+	(*stack)->s = malloc(sizeof(peItem) * EXPR_STACK_CHUNK_SIZE);
 	(*stack)->top = -1;
 }
 
-void exprStackPush(peStack stack, peNode node){
+void exprStackPush(peStack stack, peItem item){
 	stack->top++;
 	
 	if(stack->top >= stack->size){
 		stack->size += EXPR_STACK_CHUNK_SIZE;
-		stack->s = realloc(stack->s, sizeof(peNode) * stack->size);
+		stack->s = realloc(stack->s, sizeof(peItem) * stack->size);
 	}
 
-	stack->s[stack->top] = node;
+	stack->s[stack->top] = item;
 }
 
-peNode exprStackPop(peStack stack){
+peItem exprStackPop(peStack stack){
 	if(stack->top < 0) return NULL;
 
 	stack->top--;
 	return stack->s[stack->top + 1];
 }
 
-int	exprStackFirstTermPos(peStack stack){
+int	exprStackFindTerm(peStack stack){
 	int pos = stack->top;
-	for(; pos >= 0; pos--){
-		if(stack->s[pos]->type == NT_TOKEN) break;
-	}
+	for(; pos >= 0; pos--)
+		if(stack->s[pos]->type == IT_TERM) break;
 
 	return pos;
 }
@@ -163,104 +195,220 @@ void exprStackInsertOpen(peStack stack, int pos){
 		stack->s[i + 1] = stack->s[i];
 	}
 
-	peNode node = malloc(sizeof(struct eNode));
-	node->type = NT_RELATION;
-	node->val.relation = OPEN;
-	stack->s[pos] = node;
+	peItem item = malloc(sizeof(struct eItem));
+	item->type = IT_OPEN;
+	stack->s[pos] = item;
 }
 
-int exprStackToRule(peStack stack){
+int exprStackParse(peStack stack, psTree idTable){
+	peItem item = exprStackPop(stack);
+	
+	if(item->type == IT_TERM){
+		if(item->val.term->type == T_RBRCKT){
+			// Pravidlo <expr> => ( <expr> )
+			free(item);
+			item = exprStackPop(stack);
+			free(exprStackPop(stack));
+		}else{
+			// Pravidlo <expr> => <val>
+			eTermType ttype = E_UNKNOWN;
+			char *out;
+			switch(item->val.term->type){
+				case T_INTEGER: 
+					out = intToInterpret(item->val.term->data);
+					ttype = E_INT;
+					break;
+				case T_FLOAT: 
+					out = floatToInterpret(item->val.term->data);
+					ttype = E_FLOAT; 
+					break;
+				case T_STRING: 
+					out = stringToInterpret(item->val.term->data);
+					ttype = E_STRING;
+					break;
+				case T_NIL: 
+					out = nilToInterpret();
+					ttype = E_NIL;
+					break;
+				case T_TRUE:
+					out = trueToInterpret();
+					ttype = E_BOOL; 
+					break;
+				case T_FALSE:
+					out = falseToInterpret();
+					ttype = E_BOOL; 
+					break;
+				case T_ID:
+					if(symTabSearch(&idTable, item->val.term->data) == NULL){
+						return 3; // Chyba
+					}
+					out = varToInterpret(item->val.term->data);
+					break;
+				default: break;
+			}
+			printf("PUSHS %s\n", out);
+			free(out);
+			item->type = IT_NONTERM;
+			item->val.type = ttype;
+		}
 
-	peRule newRule = malloc(sizeof(struct eRule));
-	peNode newNode = malloc(sizeof(struct eNode));
-	newNode->type = NT_RULE;
-	newNode->val.rule = newRule;
-
-	peNode node = exprStackPop(stack);
-	if(node == NULL){
-		return 1; // Chyba
+		free(exprStackPop(stack));
+		exprStackPush(stack, item);
+		return 0;
 	}
 
-	if(node->type == NT_TOKEN){
-		if(node->val.token->type == T_RBRCKT){
-			node = exprStackPop(stack);
-			if(node->type != NT_RULE){
-				return 1; // Chyba
-			}
+	peItem rItem = item;
+	item = exprStackPop(stack);
+	peItem lItem = exprStackPop(stack);
 
-			peNode nnode = exprStackPop(stack);
-			if(nnode->type != NT_TOKEN || nnode->val.token->type != T_LBRCKT){
-				return 1; // Chyba
-			}
-			
-			nnode = exprStackPop(stack);
-			if(nnode->type != NT_RELATION){
-				return 1; // Chyba
-			}
-
-			exprStackPush(stack, node);			
-			return 0;
-		}else if(exprConvTypeToTerm(node->val.token->type) != E_VAL){
-			return 1; // Chyba
+	eTermType lType = lItem->val.type;
+	eTermType rType = rItem->val.type;
+	eTermType type = rType;
+	bool isSingle = lItem->type == IT_OPEN;
+	bool hasUnknown = rType == E_UNKNOWN;
+	bool isSame = false;
+	
+	// Sémantikcá část
+	if(!isSingle){
+		hasUnknown = lType == E_UNKNOWN || rType == E_UNKNOWN;
+		
+		if(lType == rType){
+			isSame = true;
+		}else if(lType == E_INT && rType == E_FLOAT){
+			printf("POPS GF@$tmp\n");
+			printf("INT2FLOATS\n");
+			printf("PUSHS GF@$tmp\n");
+			isSame = true;
+		}else if(lType == E_FLOAT && rType == E_INT){
+			printf("INT2FLOATS\n");
+			type = E_FLOAT;
+			isSame = true;
+		}else if(rType == E_UNKNOWN){
+			type = lType;
+			isSame = true;
+		}else if(lType == E_UNKNOWN){
+			isSame = true;
 		}
 	}
-	newRule->rNode = node;
 
-	
-	node = exprStackPop(stack);
-	if(node->type == NT_RELATION){
-		// Hotovo
-		newRule->type = RT_VAL;
-		exprStackPush(stack, newNode);
-		return 0;
-	}else if(node->type == NT_RULE){
-		return 1; // Chyba
-	}
-	eRuleType type;
-	switch(node->val.token->type){
+	switch(item->val.term->type){
 		case T_ADD:
-			type = RT_ADD; break;
 		case T_SUB:
-			type = RT_SUB; break;
 		case T_MUL:
-			type = RT_MUL; break;
-		case T_DIV:
-			type = RT_DIV; break;
-		case T_EQL:
-			type = RT_EQL; break;
-		case T_NEQ:
-			type = RT_NEQ; break;
+			if(hasUnknown) printf("CALL $checkIfNum\n");
+			if(!isSame || (type != E_INT && type != E_FLOAT && type != E_UNKNOWN)){
+				return 4; // Error
+			}
+			break;
 		case T_LT:
-			type = RT_LT; break;
-		case T_GT:
-			type = RT_GT; break;
 		case T_LTE:
-			type = RT_LTE; break;
+		case T_GT:
 		case T_GTE:
-			type = RT_GTE; break;
-		default: 
+			if(hasUnknown) printf("CALL $checkIfLtGt\n");
+			if(!isSame || (type != E_FLOAT && type != E_INT && type != E_UNKNOWN && type != E_STRING)){
+				return 4; // Error
+			}
+			break;
+		case T_EQL:
+		case T_NEQ:
+			if(isSingle){
+				return 4; // Error
+			}else if(hasUnknown) printf("CALL $checkIfEql\n");
+			else if(!isSame) printf("POPS GF@$tmp\nPOPS GF@$tmp\nPUSHS bool@false\n");
+			break;
+		case T_NOT:
+			if(hasUnknown){
+				printf("PUSHS bool@false\n");
+				printf("CALL $checkIfBool\n");
+				printf("POPS GF@$tmp\n");
+			}
+			if(!isSingle || (type != E_BOOL && type != E_UNKNOWN)){
+				return 4; // Error
+			}
+			break;
+		case T_AND:
+		case T_OR:
+			if(hasUnknown) printf("CALL $checkIfBool\n");
+			if(!isSame || (type != E_BOOL && type != E_UNKNOWN)){
+				return 4; // Error
+			}
+			break;
+		default:
+			return 99; // Return
 			break;
 	}
-	newRule->type = type;
-	free(node);
 
-
-	node = exprStackPop(stack);
-	if(node->type == NT_RELATION){
-		return 1; // Chyba
-	}else if(node->type == NT_TOKEN){
-		if(exprConvTypeToTerm(node->val.token->type) != E_VAL){
-			return 1; // Chyba
-		}
+	// Převod na kód
+	switch(item->val.term->type){
+		case T_ADD:
+			printf("ADDS\n");
+			break;
+		case T_SUB:
+			printf("SUBS\n");
+			break;
+		case T_MUL:
+			printf("MULS\n");
+			break;
+		case T_DIV:
+			if(hasUnknown && (type == E_FLOAT || type == E_INT || type == E_UNKNOWN)){
+				printf("CALL $checkIfNum\n");
+				printf("CALL $decideDivOp\n");
+			}else if(isSame && type == E_FLOAT){
+				printf("DIVS\n");
+			}else if(isSame && type == E_INT){
+				printf("IDIVS\n");
+			}else{
+				return 4; // Error
+			}
+			break;
+		case T_GTE:
+			printf("LTS\nNOTS\n");
+			type = E_BOOL;
+			break;
+		case T_LT:
+			printf("LTS\n");
+			type = E_BOOL;
+			break;
+		case T_LTE:
+			printf("GTS\nNOTS\n");
+			type = E_BOOL;
+			break;
+		case T_GT:
+			printf("GTS\n");
+			type = E_BOOL;
+			break;
+		case T_EQL:
+			if(isSame) printf("EQS\n");
+			type = E_BOOL;
+			break;
+		case T_NEQ:
+			if(isSame) printf("EQS\n");
+			printf("NOTS\n");
+			type = E_BOOL;
+			break;
+		case T_NOT:
+			printf("NOTS\n");
+			type = E_BOOL;
+			break;
+		case T_AND:
+			printf("ANDS\n");
+			type = E_BOOL;
+			break;
+		case T_OR:
+			printf("ORS\n");
+			type = E_BOOL;
+			break;
+		default:
+			return 99; // Return
+			break;
 	}
-	newRule->lNode = node;
 
-
-	node = exprStackPop(stack);
-	if(node->type != NT_RELATION){
-		return 1; // Chyba
-	}
-	exprStackPush(stack, newNode);
+	free(lItem);
+	free(rItem);
+	item->type = IT_NONTERM;
+	item->val.type = type;
+	if(!isSingle) free(exprStackPop(stack));
+	exprStackPush(stack, item);
 
 	return 0;
 }

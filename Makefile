@@ -6,13 +6,14 @@ OBJFILES := $(patsubst %.c,$(OBJFOLDER)/%.o,$(notdir $(SRCFILES)))
 CC=gcc
 CFLAGS= -std=c99 -pedantic -Wall -Wextra -g
 
+# Startovací pravidlo - pro přehlednost
+all: $(NAME)
+
 # vzorové pravidlo pro generování všech objektových souborů
 $(OBJFOLDER)/%.o : $(SRCFOLDER)/%.c
 	mkdir -p $(OBJFOLDER)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# Startovací pravidlo - pro přehlednost
-all: $(NAME)
 
 clean:
 	rm -rf $(OBJFOLDER)/

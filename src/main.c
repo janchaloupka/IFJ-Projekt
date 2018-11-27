@@ -2,7 +2,6 @@
 
 int main(int argc, char const *argv[])
 {
-	//return janchDebug();
 
 	if(argc > 1){
 		if(strcmp(argv[1], "j32") == 0) return janchDebug();
@@ -30,10 +29,9 @@ int janchDebug(){
 	
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);
-
-	peNode tree;
-	exprParse(&token, &tree);
-	//tree->
+	printf(".IFJcode18\nDEFVAR GF@$tmp\nCLEARS\n\n");
+	exprParse(&token, NULL);
+	printf("\nPOPS GF@$tmp\nWRITE GF@$tmp\n");
 	
 	fclose(source);
 	scannerFreeTokenList(&token);

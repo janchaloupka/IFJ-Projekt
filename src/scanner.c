@@ -183,9 +183,7 @@ int _scannerFSM(FILE *file, pToken token){
 				else nextState = STATE_ERROR;
 				break;
 			case STATE_STR3:
-				if(isdigit(currChar) || 
-				  (tolower(currChar) >= 'a' && tolower(currChar) <= 'f'))
-					nextState = STATE_STR;
+				if(isxdigit(currChar)) nextState = STATE_STR;
 				else nextState = STATE_ERROR;
 				break;
 			case STATE_STR4:
@@ -344,6 +342,10 @@ bool _scannerIsKeyword(pToken token){
 	else if(strcmp(token->data, "end") == 0) newType = T_END;
 	else if(strcmp(token->data, "if") == 0) newType = T_IF;
 	else if(strcmp(token->data, "not") == 0) newType = T_NOT;
+	else if(strcmp(token->data, "and") == 0) newType = T_AND;
+	else if(strcmp(token->data, "or") == 0) newType = T_OR;
+	else if(strcmp(token->data, "true") == 0) newType = T_TRUE;
+	else if(strcmp(token->data, "false") == 0) newType = T_FALSE;
 	else if(strcmp(token->data, "nil") == 0) newType = T_NIL;
 	else if(strcmp(token->data, "then") == 0) newType = T_THEN;
 	else if(strcmp(token->data, "while") == 0) newType = T_WHILE;
@@ -458,6 +460,10 @@ const char *scannerTypeToString(tType type){
 		case T_END: 	return "END"; break;
 		case T_IF: 		return "IF"; break;
 		case T_NOT:	 	return "NOT"; break;
+		case T_AND:		return "AND"; break;
+		case T_OR:		return "OR"; break;
+		case T_TRUE:	return "TRUE"; break;
+		case T_FALSE:	return "FALSE"; break;
 		case T_NIL: 	return "NIL"; break;
 		case T_THEN:	return "THEN"; break;
 		case T_WHILE: 	return "WHILE"; break;

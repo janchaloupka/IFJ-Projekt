@@ -36,6 +36,10 @@ typedef enum{
 	T_END,		//!< Keyword - END
 	T_IF,		//!< Keyword - IF
 	T_NOT,		//!< Keyword - NOT
+	T_AND,		//!< Keyword - AND
+	T_OR,		//!< Keyword - OR
+	T_TRUE,		//!< Keyword - true
+	T_FALSE,	//!< Keyword - false
 	T_NIL,		//!< Keyword - NIL
 	T_THEN,		//!< Keyword - THEN
 	T_WHILE,	//!< Keyword - WHILE
@@ -72,7 +76,7 @@ typedef enum{
 	N_WHILE,
 	N_EXPR,
 	N_EXPR_O,
-	N_EXPR_ID,
+	N_EXPR_ID
 } tType;
 
 

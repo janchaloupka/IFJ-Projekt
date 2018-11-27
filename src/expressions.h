@@ -1,87 +1,79 @@
 /**
  * @file expressions.h
  * 
- * Zpracování výrazů metodou zespodu nahoru
+ * Zpracování výrazů precedenční analýzou
  * 
  * @version 0.1
  * @date 2018-11-20
  */
 
+#pragma once
 #include <stdbool.h>
 #include "scanner.h"
+#include "symtable.h"
+#include "common.h"
 
 #define EXPR_STACK_CHUNK_SIZE 100
 
 typedef enum{
-	OPEN,
-	CLOSE,
-	EQUAL,
-	ERROR
+	E_OPEN,
+	E_CLOSE,
+	E_EQUAL,
+	E_EMPTY
 } eRelation;
+
+typedef enum{
+	E_INT,
+	E_FLOAT,
+	E_STRING,
+	E_NIL,
+	E_BOOL,
+	E_UNKNOWN
+} eTermType;
 
 typedef enum{
 	E_MULDIV,
 	E_ADDSUB,
+	E_NOT,
+	E_ANDOR,
 	E_LTGT,
 	E_EQL,
 	E_LB,
 	E_RB,
 	E_VAL,
 	E_$
-} eTerm;
+} eRelTerm;
 
 typedef enum{
-	RT_VAL,
-	RT_ADD,
-	RT_SUB,
-	RT_DIV,
-	RT_MUL,
-	RT_EQL,
-	RT_NEQ,
-	RT_LT,
-	RT_GT,
-	RT_LTE,
-	RT_GTE,
-	RT_BRACKET
-} eRuleType;
-
-typedef enum{
-	NT_RELATION,
-	NT_TOKEN,
-	NT_RULE
-} eNodeType;
+	IT_OPEN,
+	IT_TERM,
+	IT_NONTERM,
+} eItemType;
 
 typedef union{
-	eRelation relation;
-	pToken token;
-	struct eRule *rule;
-} eNodeVal;
+	pToken term;
+	eTermType type;
+} eItemVal;
 
-typedef struct eNode{
-	eNodeType type;
-	eNodeVal val;
-} *peNode;
-
-typedef struct eRule{
-	eRuleType type;
-	struct eNode *lNode;
-	struct eNode *rNode;
-} *peRule;
-
+typedef struct eItem{
+	eItemType type;
+	eItemVal val;
+} *peItem;
 
 typedef struct eStack{
 	int size;
 	int top;
-	peNode *s;
+	peItem *s;
 } *peStack;
 
-eTerm		exprConvTypeToTerm(tType tokenType);
-eRelation	exprGetRelation(eTerm currTerm, eTerm newTerm);
-int 		exprParse(pToken *token, peNode *nodeTree);
+int exprParse(pToken *token, psTree idTable);
 
-void	exprStackInit(peStack *stack);
-void	exprStackPush(peStack stack, peNode node);
-peNode	exprStackPop(peStack stack);
-int		exprStackFirstTermPos(peStack stack);
-void	exprStackInsertOpen(peStack stack, int pos);
-int		exprStackToRule(peStack stack);
+eRelTerm exprConvTypeToTerm(tType tokenType);
+eRelation exprGetRelation(eRelTerm currTerm, eRelTerm newTerm);
+
+void exprStackInit(peStack *stack);
+void exprStackPush(peStack stack, peItem item);
+peItem exprStackPop(peStack stack);
+int exprStackFindTerm(peStack stack);
+void exprStackInsertOpen(peStack stack, int pos);
+int exprStackParse(peStack stack, psTree idTable);

@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -35,9 +36,8 @@ void symTabInit(psTree *tree);
  * 
  * @param tree Strom, do kterého se bude vkládat
  * @param data Data pro vložení do stromu
- * @return bool Pokud se vložení povedlo, vrací true
  */
-bool symTabInsert(psTree *tree, char *key, psData data);
+void symTabInsert(psTree *tree, char *key, psData data);
 
 /**
  * Podle klíče vyhledá uzel ve stromě 

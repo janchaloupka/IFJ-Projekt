@@ -3,12 +3,10 @@
 <val>	-> integer
 <val>	-> float
 <val>	-> string
+<val>	-> bool
 <val>	-> id
 
 <expr>	-> <val>
-<expr>	-> ( <expr> )
-# <expr>	-> + <expr>
-# <expr>	-> - <expr>
 <expr>	-> <expr> + <expr>
 <expr>	-> <expr> - <expr>
 <expr>	-> <expr> / <expr>
@@ -19,3 +17,9 @@
 <expr>	-> <expr> > <expr>
 <expr>	-> <expr> <= <expr>
 <expr>	-> <expr> >= <expr>
+<expr>	-> ( <expr> )
+<expr>	-> + <expr>
+<expr>	-> - <expr>
+<expr>	-> not <expr>
+<expr>	-> <expr> and <expr>
+<expr>	-> <expr> or <expr>
