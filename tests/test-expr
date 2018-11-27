@@ -1,2 +1,3 @@
 a = "hello"
-(a + " world") == "hello world"
+a = not (a + " world" == "hello world") or 2.5 <= 2
+print a
