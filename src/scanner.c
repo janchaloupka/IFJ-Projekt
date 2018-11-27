@@ -173,7 +173,7 @@ int _scannerFSM(FILE *file, pToken token){
 				else token->type = T_ID;
 				break;
 			case STATE_ID_FN:
-				token->type = T_IDFN;
+				token->type = T_ID;
 				break;
 			// String
 			case STATE_STR:
@@ -375,7 +375,6 @@ void scannerFreeToken(pToken *token){
 		case T_INTEGER:
 		case T_FLOAT:
 		case T_ID:
-		case T_IDFN:
 			free((*token)->data);
 			break;
 		default:
@@ -460,7 +459,6 @@ void _scannerHandleError(sState state, char currChar, unsigned int line, unsigne
 const char *scannerTypeToString(tType type){
 	switch(type){
 		case T_ID: 		return "ID"; break;
-		case T_IDFN: 	return "IDFN"; break;
 		case T_DEF: 	return "DEF"; break;
 		case T_DO: 		return "DO"; break;
 		case T_ELSE: 	return "ELSE"; break;
@@ -512,7 +510,6 @@ void scannerPrintToken(pToken token){
 		case T_INTEGER:
 		case T_FLOAT:
 		case T_ID:
-		case T_IDFN:
 			printf("(%s)", token->data);
 			break;
 		default:

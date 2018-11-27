@@ -29,7 +29,6 @@
 typedef enum{
 	T_UNKNOWN, 	//!< Výchozí typ
 	T_ID, 		//!< Identifikátor funkce/proměnné
-	T_IDFN, 	//!< Identifikátor funkce
 	T_DEF,		//!< Keyword - DEF
 	T_DO,		//!< Keyword - DO
 	T_ELSE,		//!< Keyword - ELSE
