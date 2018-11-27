@@ -94,7 +94,9 @@ int exprParse(pToken *token, psTree idTable){
 	peStack stack;
 	exprStackInit(&stack);
 
-	while(true){
+	int retCode = -1;
+
+	while(retCode < 0){
 		eRelTerm stackT, newT;
 
 		int termPos = exprStackFindTerm(stack);
@@ -115,10 +117,10 @@ int exprParse(pToken *token, psTree idTable){
 				break;
 			case E_CLOSE:
 				{
-					int retval = exprStackParse(stack, idTable);
-					if(retval > 0){
-						fprintf(stderr, "Nesouhlasí gramatika expr (errid: %d)\n", retval);
-						return retval;
+					int stackret = exprStackParse(stack, idTable);
+					if(stackret > 0){
+						fprintf(stderr, "Nesouhlasí gramatika expr (errid: %d)\n", stackret);
+						retCode = stackret;
 					}
 				}
 				break;
@@ -134,25 +136,28 @@ int exprParse(pToken *token, psTree idTable){
 				if(stackT == newT && stackT == E_$){
 					if(stack->top < 0){
 						fprintf(stderr, "Expr nemuze byt prazdnej pyco\n");
-						return 2;
+						retCode = 2;
+					}else {
+						retCode = 0;
 					}
 					
-					return 0;
+				}else{
+					fprintf(stderr, "[SYNTAX] Error on line %d:%d - ", (*token)->linePos, (*token)->colPos);
+					
+					if(termPos < 0)
+						fprintf(stderr, "Expression cannot start with %s\n", scannerTypeToString((*token)->type));
+					else 
+						fprintf(stderr, "%s in expression cannot be followed with %s\n",
+							scannerTypeToString(stack->s[termPos]->val.term->type),
+							scannerTypeToString((*token)->type)
+						);
+					retCode = 2;
 				}
-				
-				fprintf(stderr, "[SYNTAX] Error on line %d:%d - ", (*token)->linePos, (*token)->colPos);
-				
-				if(termPos < 0)
-					fprintf(stderr, "Expression cannot start with %s\n", scannerTypeToString((*token)->type));
-				else 
-					fprintf(stderr, "%s in expression cannot be followed with %s\n",
-						scannerTypeToString(stack->s[termPos]->val.term->type),
-						scannerTypeToString((*token)->type)
-					);
-				return 2;
 		}
 	}
-	return 0;
+
+	exprStackDispose(&stack);
+	return retCode;
 }
 
 void exprStackInit(peStack *stack){
@@ -161,6 +166,18 @@ void exprStackInit(peStack *stack){
 	(*stack)->size = EXPR_STACK_CHUNK_SIZE;
 	(*stack)->s = malloc(sizeof(peItem) * EXPR_STACK_CHUNK_SIZE);
 	(*stack)->top = -1;
+}
+
+void exprStackDispose(peStack *stack){
+	if(stack == NULL || *stack == NULL) return;
+
+	for(int i = (*stack)->top; i >= 0; i--){
+		free((*stack)->s[i]);
+	}
+
+	free((*stack)->s);
+	free(*stack);
+	*stack = NULL;
 }
 
 void exprStackPush(peStack stack, peItem item){
@@ -293,6 +310,11 @@ int exprStackParse(peStack stack, psTree idTable){
 
 	switch(item->val.term->type){
 		case T_ADD:
+			if(hasUnknown) printf("CALL $checkIfAdd\n");
+			if(!isSame || (type != E_INT && type != E_FLOAT && type != E_STRING && type != E_UNKNOWN)){
+				return 4; // Error
+			}
+			break;
 		case T_SUB:
 		case T_MUL:
 			if(hasUnknown) printf("CALL $checkIfNum\n");
@@ -341,7 +363,12 @@ int exprStackParse(peStack stack, psTree idTable){
 	// Převod na kód
 	switch(item->val.term->type){
 		case T_ADD:
-			printf("ADDS\n");
+			if(!hasUnknown){
+				if(type == E_STRING)
+					printf("POPS GF@$tmp2\nPOPS GF@$tmp\nCONCAT GF@$tmp GF@$tmp GF@$tmp2\nPUSHS GF@$tmp\n");
+				else
+					printf("ADDS\n");
+			}
 			break;
 		case T_SUB:
 			printf("SUBS\n");

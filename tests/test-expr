@@ -1,4 +1,2 @@
-a > 4.5
-# Toto idk
-1 + 2 * 2 == 5.0 and not "abc" > "abcd"
-# Melo by byt true
+a = "hello"
+(a + " world") == "hello world"

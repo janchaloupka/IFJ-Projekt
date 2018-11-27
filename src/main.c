@@ -10,7 +10,8 @@ int main(int argc, char const *argv[])
 	}
 	
 	//return yellDebug();
-
+	return janchDebug();
+	
 	return 0;
 }
 
@@ -55,8 +56,9 @@ int janchDebug(){
 	pToken token = NULL;
 	scannerGetTokenList(&token, source);
 	generateBaseCode();
-	printf("CREATEFRAME\nPUSHFRAME\nDEFVAR LF@a\nMOVE LF@a bool@true\n");
-	exprParse(&token, localId);
+	printf("CREATEFRAME\nPUSHFRAME\nDEFVAR LF@a\nMOVE LF@a string@hello\n");
+	parser(&token);
+	//exprParse(&token, localId);
 	printf("\nPOPS GF@$tmp\nWRITE GF@$tmp\n");
 	
 	fclose(source);
