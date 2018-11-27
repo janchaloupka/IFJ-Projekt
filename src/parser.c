@@ -3,111 +3,102 @@
 
 int parser(pToken *List){
 
-	pToken token = (*List);			// List pro průchod syntaxe
-	pToken semanToken = (*List);	// List pro průchod sémantiky
+	pToken token = (*List);		// List pro průchod syntaxe
+	pToken preRun = (*List);	// List pro pre-run
+	
 	int error = 0;				// Chyba vstupního kódu
-	int int_error = 0;			// Interní chyba překladače
-	tStack S;					// Stack pro rekurzivní sestup
-	psTree main_table;			// Hlavní tabulka symbolů
-	symTabInit(&main_table);
-	parserSemanticsInit(&main_table);	// Naplnění tabulky built-in funkcema
-	int_error = parserStackInit(&S);
+	int internalError = 0;			// Interní chyba překladače
 
-	while(token != NULL){	// Syntaktická analýza + sémantické definice funkcí
+	psTree funcTable;			// Hlavní tabulka definovaných funkcí
+	psTree varTable;			// Hlavní tabulka proměnných
+	psTree localTable = NULL;	// Lokální proměnné
+	pToken func = NULL;			// ... této funkce (func->data)
 
-		pToken prevToken = token;
+	symTabInit(&funcTable);
+	symTabInit(&varTable);
 
-		if(S.a[S.last] > T_STRING){
-			int_error = parserExpand(&S, &token, &error, &int_error);	// Je-li na stacku neterminál
-		}
+	parserSemanticsInitBuiltIn(&funcTable);	// Naplnění tabulky built-in funkcema
 
-		else{
-			if(!error) error = (parserCompare(S, token));	// Je-li na stacku s čím porovnávat
-			if(!error) error = (parserSemanticsPreRun(&token, &main_table));	// Naplnění tabulky definicí funkcí
-			parserStackPop(&S, &int_error);
-			token = token->nextToken;
-		}
+	SyntaxStack S;							// Stack pro rekurzivní sestup
+	pSemanticsStack semanticError;			// Stack sémantických chyb
 
-		error = parserError(error, int_error, &prevToken, &S);
-		if(error) return error;
-	}
+	parserSyntaxStackInit(&S, &internalError);
+	parserSemanticStackInit(&semanticError, &internalError);
 
-
+	bool tokenChecked = false;
 	bool inFunc = false;	// Je-li true, jsme ve funkci
 	int inAux = 0;			// Semafor? Za každý if/while ++, za každý END --
 
-	while(semanToken != NULL){		// Sémantická analýza
-
-		pToken prevToken = semanToken;
-		pToken func;
-		psTree local_frame;
-
-		if(semanToken->type == T_DEF){
-			inFunc = true;
-		}
-
-		else if(semanToken->type == T_IF || semanToken->type == T_WHILE){
-			inAux++;
-		}
-
-		else if(semanToken->type == T_END && !inAux){
-			inFunc = false;
-		}
-
-		else if(semanToken->type == T_END && inAux){
-			inAux--;
-		}
-
-		if(inFunc && semanToken->type == T_DEF){
-			local_frame = symTabSearch(&main_table, semanToken->nextToken->data)->localFrame;
-			func = semanToken->nextToken;
-		}
-
-		if(semanToken->type == T_ID && semanToken->nextToken->type == T_ASSIGN){
-			symTabInsert(&main_table, semanToken->data, parserSemanticsInitData(VAR, true, NULL, 0));
-		}
-
-		else if(semanToken->type == T_ID){
-			if(!inFunc){
-				psData data = symTabSearch(&main_table, semanToken->data);
-
-				if(data == NULL || (!data->defined)){
-					printf("[SEMANTIC] Error: Undefined variable %s on line %u:%u!\n", semanToken->data, semanToken->linePos, semanToken->linePos);
-					error = 3;
-				}
-			}
-			else{
-				psData data = symTabSearch(&local_frame, semanToken->data);
-
-				if(func->linePos == semanToken->linePos){
-					symTabInsert(&local_frame, semanToken->data, parserSemanticsInitData(VAR, true, NULL, 0));
-				}
-
-				else{
-					if((data == NULL || !(data->defined)) && (symTabSearch(&main_table, semanToken->data) == NULL || symTabSearch(&main_table, semanToken->data)->type != FUNC)){
-						printf("[SEMANTIC] Error: Undefined variable %s on line %u:%u!\n", semanToken->data, semanToken->linePos, semanToken->linePos);
-						error = 3;
-					}
-				}
-			}
-		}
-
-		error = parserError(error, int_error, &prevToken, &S);
-		if(error) return error;
-		semanToken = semanToken->nextToken;
+	while(preRun != NULL){	// Sémantický pre-run, naplnění tabulky definicemi funkcí
+		parserSemanticsPreRun(&preRun, &funcTable, semanticError, &internalError, &error);	// Naplnění tabulky definicí funkcí
+		parserSyntaxError(error, internalError, NULL, &S);	// Pouze pro výpis erroru 42
+		preRun = preRun->nextToken;
 	}
 
-	symTabDispose(&main_table);
-	parserStackDelete(&S);
-	return 0;
+	while(token != NULL){	// Syntaktická analýza + Sémantická analýza
+
+		pToken prevToken = token;
+
+		if(tokenChecked){
+			// Neudělej nic, protože jsi to už udělal
+		}
+
+		else{
+			parserSemanticsInFunc(&inFunc, &inAux, token);	// Jsme-li ve funkci - tj. mezi DEF a příslušným END
+			parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, semanticError, inFunc, &internalError); // Víceméně jen check IDček
+			tokenChecked = true;
+		}
+
+		if(S.a[S.last] > T_STRING){
+			parserSyntaxExpand(&S, &token, &error, &internalError);	// Je-li na stacku neterminál
+		}
+
+		else{
+			parserSyntaxCompare(S, token, &error);	// Je-li na stacku s čím porovnávat
+			parserSyntaxStackPop(&S, &internalError);
+			parserSyntaxIDFNCheck(token, &funcTable, &error);	// Kontrola ? a ! na konci proměnných
+
+			token = token->nextToken;
+			tokenChecked = false;	// Nový token pro sémantickou analýzu
+		}
+
+		error = parserSyntaxError(error, internalError, &prevToken, &S);
+		if(error){
+			
+			// Úklid
+
+			symTabDispose(&varTable);
+			symTabDispose(&funcTable);
+			parserSemanticStackDelete(&semanticError);
+			parserSyntaxStackDelete(&S);
+			return error;
+		} 
+	}
+
+	error = parserSemanticError(semanticError);	// Došli jsme až sem, syntax je tedy správně, pokud jsou sémantické chyby, měly by i dávat smysl
+
+	// Úklid
+
+	symTabDispose(&varTable);
+	symTabDispose(&funcTable);
+	parserSemanticStackDelete(&semanticError);
+	parserSyntaxStackDelete(&S);
+	return error;
 }
 
-int parserCompare(tStack S, pToken token){
-	if (S.a[S.last] == token->type) return 0;
-	else return 2;
+
+
+
+/******************************************************SYNTAX******************************************************************************/
+
+void parserSyntaxCompare(SyntaxStack S, pToken token, int *error){
+	if (S.a[S.last] == token->type){
+
+	}
+	else if(!*error) *error = 2;
 }
 
-int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
+void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError){
 	if(S->a[S->last] == N_PROG){
 		if((*token)->type == T_ID ||
 		(*token)->type == T_NIL ||
@@ -119,34 +110,34 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 		(*token)->type == T_IF ||
 		(*token)->type == T_WHILE ||
 		(*token)->type == T_EOL){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), N_PROG, int_error);
-			parserStackPush(&(*S), N_BODY, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_PROG, internalError);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
 		}
 
 		else if((*token)->type == T_DEF){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), N_PROG, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
-			parserStackPush(&(*S), N_DEFUNC, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_PROG, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), N_DEFUNC, internalError);
 		}
 
 		else if((*token)->type == T_EOF){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), T_EOF, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_EOF, internalError);
 		}
 		
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_BODY){
-		parserStackPop(&(*S), int_error);
+		parserSyntaxStackPop(&(*S), internalError);
 
 		if((*token)->type == T_ID){
-			parserStackPush(&(*S), N_BODY, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
-			parserStackPush(&(*S), N_BODY_ID, int_error);
-			parserStackPush(&(*S), T_ID, int_error);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), N_BODY_ID, internalError);
+			parserSyntaxStackPush(&(*S), T_ID, internalError);
 		}
 
 		else if((*token)->type == T_NIL ||
@@ -155,26 +146,26 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 		(*token)->type == T_FLOAT ||
 		(*token)->type == T_NOT ||
 		(*token)->type == T_LBRCKT){
-			parserStackPush(&(*S), N_BODY, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
-			parserStackPush(&(*S), N_EXPR, int_error);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), N_EXPR, internalError);
 		}
 
 		else if((*token)->type == T_IF){
-			parserStackPush(&(*S), N_BODY, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
-			parserStackPush(&(*S), N_IF, int_error);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), N_IF, internalError);
 		}
 
 		else if((*token)->type == T_WHILE){
-			parserStackPush(&(*S), N_BODY, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
-			parserStackPush(&(*S), N_WHILE, int_error);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), N_WHILE, internalError);
 		}
 
 		else if((*token)->type == T_EOL){
-			parserStackPush(&(*S), N_BODY, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
 		}
 	}
 
@@ -185,8 +176,8 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 		(*token)->type == T_STRING ||
 		(*token)->type == T_FLOAT ||
 		(*token)->type == T_LBRCKT){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), N_FUNC, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_FUNC, internalError);
 		}
 
 		else if((*token)->type == T_ADD ||
@@ -199,143 +190,143 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 		(*token)->type == T_LT ||
 		(*token)->type == T_GTE ||
 		(*token)->type == T_LTE){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), N_EXPR_O, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_EXPR_O, internalError);
 		}
 
 		else if((*token)->type == T_ASSIGN){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), N_DEFVAR, int_error);
-			parserStackPush(&(*S), T_ASSIGN, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_DEFVAR, internalError);
+			parserSyntaxStackPush(&(*S), T_ASSIGN, internalError);
 		}
 
 		else if((*token)->type == T_EOL){
-			parserStackPop(&(*S), int_error);
+			parserSyntaxStackPop(&(*S), internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_TYPE){
 		if((*token)->type == T_NIL){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), T_NIL, int_error);	
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_NIL, internalError);	
 		}
 
 		else if((*token)->type == T_INTEGER){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), T_INTEGER, int_error);	
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_INTEGER, internalError);	
 		}
 
 		else if((*token)->type == T_STRING){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), T_STRING, int_error);	
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_STRING, internalError);	
 		}
 
 		else if((*token)->type == T_FLOAT){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), T_FLOAT, int_error);	
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_FLOAT, internalError);	
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_DEFUNC){
 		if((*token)->type == T_DEF){
-				parserStackPop(&(*S), int_error);
-				parserStackPush(&(*S), T_END, int_error);
-				parserStackPush(&(*S), N_BODY, int_error);
-				parserStackPush(&(*S), T_EOL, int_error);
-				parserStackPush(&(*S), T_RBRCKT, int_error);
-				parserStackPush(&(*S), N_PARS, int_error);
-				parserStackPush(&(*S), T_LBRCKT, int_error);
-				parserStackPush(&(*S), T_ID, int_error);
-				parserStackPush(&(*S), T_DEF, int_error);
+				parserSyntaxStackPop(&(*S), internalError);
+				parserSyntaxStackPush(&(*S), T_END, internalError);
+				parserSyntaxStackPush(&(*S), N_BODY, internalError);
+				parserSyntaxStackPush(&(*S), T_EOL, internalError);
+				parserSyntaxStackPush(&(*S), T_RBRCKT, internalError);
+				parserSyntaxStackPush(&(*S), N_PARS, internalError);
+				parserSyntaxStackPush(&(*S), T_LBRCKT, internalError);
+				parserSyntaxStackPush(&(*S), T_ID, internalError);
+				parserSyntaxStackPush(&(*S), T_DEF, internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_FUNC){
-		parserStackPop(&(*S), int_error);
+		parserSyntaxStackPop(&(*S), internalError);
 
 		if((*token)->type == T_ID ||
 		(*token)->type == T_NIL ||
 		(*token)->type == T_INTEGER ||
 		(*token)->type == T_STRING ||
 		(*token)->type == T_FLOAT){
-			parserStackPush(&(*S), N_PARS, int_error);
+			parserSyntaxStackPush(&(*S), N_PARS, internalError);
 		}
 		
 		else if ((*token)->type == T_LBRCKT){
-			parserStackPush(&(*S), T_RBRCKT, int_error);
-			parserStackPush(&(*S), N_PARS, int_error);
-			parserStackPush(&(*S), T_LBRCKT, int_error);
+			parserSyntaxStackPush(&(*S), T_RBRCKT, internalError);
+			parserSyntaxStackPush(&(*S), N_PARS, internalError);
+			parserSyntaxStackPush(&(*S), T_LBRCKT, internalError);
 		}
 	}
 
 	else if(S->a[S->last] == N_PARS){
-		parserStackPop(&(*S), int_error);
+		parserSyntaxStackPop(&(*S), internalError);
 
 		if((*token)->type == T_ID){
-			parserStackPush(&(*S), N_PARSN, int_error);
-			parserStackPush(&(*S), T_ID, int_error);
+			parserSyntaxStackPush(&(*S), N_PARSN, internalError);
+			parserSyntaxStackPush(&(*S), T_ID, internalError);
 		}
 
 		else if((*token)->type == T_NIL ||
 		(*token)->type == T_INTEGER ||
 		(*token)->type == T_STRING ||
 		(*token)->type == T_FLOAT){
-			parserStackPush(&(*S), N_PARSN, int_error);
-			parserStackPush(&(*S), N_TYPE, int_error);
+			parserSyntaxStackPush(&(*S), N_PARSN, internalError);
+			parserSyntaxStackPush(&(*S), N_TYPE, internalError);
 		}
 	}
 
 	else if(S->a[S->last] == N_PARSN){
-		parserStackPop(&(*S), int_error);
+		parserSyntaxStackPop(&(*S), internalError);
 
 		if((*token)->type == T_COMMA){
-			parserStackPush(&(*S), N_PARS, int_error);
-			parserStackPush(&(*S), T_COMMA, int_error);
+			parserSyntaxStackPush(&(*S), N_PARS, internalError);
+			parserSyntaxStackPush(&(*S), T_COMMA, internalError);
 		}
 	}
 
 	else if(S->a[S->last] == N_IF){
 		if((*token)->type == T_IF){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), T_END, int_error);
-			parserStackPush(&(*S), N_BODY, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
-			parserStackPush(&(*S), T_ELSE, int_error);
-			parserStackPush(&(*S), N_BODY, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
-			parserStackPush(&(*S), T_THEN, int_error);
-			parserStackPush(&(*S), N_EXPR, int_error);
-			parserStackPush(&(*S), T_IF, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_END, internalError);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), T_ELSE, internalError);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), T_THEN, internalError);
+			parserSyntaxStackPush(&(*S), N_EXPR, internalError);
+			parserSyntaxStackPush(&(*S), T_IF, internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_WHILE){
 		if((*token)->type == T_WHILE){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), T_END, int_error);
-			parserStackPush(&(*S), N_BODY, int_error);
-			parserStackPush(&(*S), T_EOL, int_error);
-			parserStackPush(&(*S), T_DO, int_error);
-			parserStackPush(&(*S), N_EXPR, int_error);
-			parserStackPush(&(*S), T_WHILE, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_END, internalError);
+			parserSyntaxStackPush(&(*S), N_BODY, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), T_DO, internalError);
+			parserSyntaxStackPush(&(*S), N_EXPR, internalError);
+			parserSyntaxStackPush(&(*S), T_WHILE, internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_DEFVAR){
 		if((*token)->type == T_ID){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), N_DEFVARID, int_error);
-			parserStackPush(&(*S), T_ID, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_DEFVARID, internalError);
+			parserSyntaxStackPush(&(*S), T_ID, internalError);
 		}
 
 		else if((*token)->type == T_NIL ||
@@ -344,15 +335,15 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 		(*token)->type == T_STRING ||
 		(*token)->type == T_NOT ||
 		(*token)->type == T_LBRCKT){
-			parserStackPop(&(*S), int_error);
-			parserStackPush(&(*S), N_EXPR, int_error);
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_EXPR, internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_DEFVARID){
-		parserStackPop(&(*S), int_error);
+		parserSyntaxStackPop(&(*S), internalError);
 
 		if((*token)->type == T_LBRCKT ||
 		(*token)->type == T_ID ||
@@ -360,7 +351,7 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 		(*token)->type == T_INTEGER ||
 		(*token)->type == T_FLOAT ||
 		(*token)->type == T_STRING){
-			parserStackPush(&(*S), N_FUNC, int_error);
+			parserSyntaxStackPush(&(*S), N_FUNC, internalError);
 		}
 
 		else if((*token)->type == T_ADD ||
@@ -373,7 +364,7 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 		(*token)->type == T_GT ||
 		(*token)->type == T_LTE ||
 		(*token)->type == T_GTE){
-			parserStackPush(&(*S), N_EXPR_O, int_error);
+			parserSyntaxStackPush(&(*S), N_EXPR_O, internalError);
 		}
 	} 
 
@@ -384,10 +375,10 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 
 		if((*token)->type == T_EOL ||
 		(*token)->type == T_EOF){
-			parserStackPop(&(*S), int_error);
+			parserSyntaxStackPop(&(*S), internalError);
 		}
 
-		else *error = 2;
+		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_EXPR){
@@ -398,144 +389,42 @@ int parserExpand(tStack *S, pToken *token, int *error, int *int_error){
 		(*token)->type == T_THEN ||
 		(*token)->type == T_DO ||
 		(*token)->type == T_EOF){
-			parserStackPop(&(*S), int_error);
+			parserSyntaxStackPop(&(*S), internalError);
 		}
 
-		else *error = 2;	// TODO Fixni error, když je přiřazení místo expressionu např. ve while cyklu
+		else if(!*error) *error = 2;
 	}
 
 	else{
+		if (!*internalError) *internalError = 2;	// Neočekávaný token na stacku
+	}
+}
+
+int parserSyntaxError(int error, int internalError, pToken *prevToken, SyntaxStack *S){
+	if(internalError == 1){
 		fprintf(stderr, "[INTERNAL ERROR]: Unexpected token on stack!\n");
-		return 1;
+		return 99;
 	}
 
-	return 0;
-}
+	if(internalError == 2){
+		fprintf(stderr, "[INTERNAL ERROR]: Failed malloc!\n");
+		return 99;
+	} 
 
-int parserStackInit(tStack *S){
-	S->top = 1;
-	S->last = 0;
-
-	if(!(S->a = malloc(STACK_CHUNK_SIZE * sizeof(tType)))){
-		fprintf(stderr, "[INTERNAL ERROR]: Failed malloc during stack initialization!\n");
-		return 1;
-	}
-
-	S->size = STACK_CHUNK_SIZE;
-	S->a[0] = N_PROG; 				// Výchozí neterminál je <prog>
-	return 0;
-}
-
-void parserStackDelete(tStack *S){
-	free(S->a);
-}
-
-void parserStackPush(tStack *S, tType type, int *int_error){
-	if (S->top == S->size){
-		S->size += STACK_CHUNK_SIZE;
-		S->a = realloc(S->a, S->size * sizeof(tType));
-		if(S->a == NULL){
-			fprintf(stderr, "[INTERNAL ERROR]: Failed malloc during stack expansion!\n");
-			*int_error = 1;
-		}
-	}
-	
-	S->a[S->top] = type;
-	S->top++;
-	S->last++;
-}
-
-tType parserStackPop(tStack *S, int *int_error){
-	if (S->top==0) {
-		fprintf(stderr, "[INTERNAL ERROR]: Stack underflow!\n");
-		*int_error = 1;
-		return(T_UNKNOWN);
-	}	
-	else {
-		S->last--;
-		return(S->a[S->top--]); 
-	}	
-}
-
-int parserSemanticsPreRun(pToken *token, psTree *main_table){
-	if((*token)->type == T_ID){
-
-		if((*token)->prevToken != NULL && (*token)->prevToken->type == T_DEF){
-			
-			if(!(symTabSearch(main_table, (*token)->data))){
-				psTree localFrame;
-				symTabInit(&localFrame);
-				psData data = parserSemanticsInitData(FUNC, true, localFrame, 0);
-				pToken param = (*token)->nextToken->nextToken;
-
-				while(param != NULL){
-					if(param->type == T_COMMA){
-						param = param->nextToken;
-					}
-
-					else if(param->type == T_ID){
-						symTabInsert(&localFrame, param->data, parserSemanticsInitData(VAR, true, NULL, 0));
-						param = param->nextToken;
-						data->params++;
-					}
-
-					else if(param->type == T_STRING || param->type == T_FLOAT || param->type == T_INTEGER || param->type == T_NIL){
-						return 42;
-					}
-
-					else break;
-				}
-
-				symTabInsert(main_table, (*token)->data, data);
-			}
-
-			else{
-				 fprintf(stderr, "[SEMANTICS] Error: Attempted to redefine a function!\n");
-				 return 3;
-			}
-		}
-	}
-
-	return 0;
-}
-
-psData parserSemanticsInitData(sType type, bool defined, struct sTree *localFrame, int params){
-	psData data = malloc(sizeof(struct sData));
-	data->defined = defined;
-	data->type = type;
-	data->localFrame = &(*localFrame);
-	data->params = params;
-	return data;
-}
-
-void parserSemanticsInit(psTree *main_table){
-	symTabInsert(main_table, "print", parserSemanticsInitData(FUNC, true, NULL, -1));
-	symTabInsert(main_table, "inputs", parserSemanticsInitData(FUNC, true, NULL, 0));
-	symTabInsert(main_table, "inputi", parserSemanticsInitData(FUNC, true, NULL, 0));
-	symTabInsert(main_table, "inputf", parserSemanticsInitData(FUNC, true, NULL, 0));
-	symTabInsert(main_table, "length", parserSemanticsInitData(FUNC, true, NULL, 1));
-	symTabInsert(main_table, "substr", parserSemanticsInitData(FUNC, true, NULL, 3));
-	symTabInsert(main_table, "ord", parserSemanticsInitData(FUNC, true, NULL, 2));
-	symTabInsert(main_table, "chr", parserSemanticsInitData(FUNC, true, NULL, 1));
-	return;
-}
-
-int parserError(int error, int int_error, pToken *prevToken, tStack *S){
-	if(int_error) return 99;
-
-	if(error){
+	if(error){	//Syntax error
 			if(error == 2){
 				fprintf(stderr, "[SYNTAX] Error on line %u:%u - expected %s, got %s\n",
 					(*prevToken)->linePos, (*prevToken)->colPos, scannerTypeToString((*S).a[(*S).top]), scannerTypeToString((*prevToken)->type));
 				return 2;
 			}
 
-			else if(error == 69){	//Syntaktický error expressionu
+			else if(error == 32){	//Syntaktický error expressionu
 				return 2;
 			}
 
-			else if(error == 3){
-				return 3;
+			else if(error == 69){
+				fprintf(stderr, "[SYNTAX] Error: Only function names can end with \"!\" and \"?\" symbols!\n");
+				return 2;
 			}
 
 			else if(error == 42){
@@ -552,4 +441,321 @@ int parserError(int error, int int_error, pToken *prevToken, tStack *S){
 	return 0;
 }
 
-//TODO NOT není NOT
+void parserSyntaxIDFNCheck(pToken token, psTree *funcTable, int *error){
+	if(token->type == T_ID && (token->data[strlen(token->data) - 1] == '!' || token->data[strlen(token->data) - 1] == '?'))
+		if(!symTabSearch(funcTable, token->data))
+			if(!*error) *error = 69;
+}
+
+
+
+
+/*******************************************************STACK*****************************************************************************/
+
+void parserSyntaxStackInit(SyntaxStack *S, int *internalError){
+	S->top = 1;
+	S->last = 0;
+
+	if(!(S->a = malloc(STACK_CHUNK_SIZE * sizeof(tType)))){
+		fprintf(stderr, "[INTERNAL ERROR]: Failed malloc during stack initialization!\n");
+		if (!*internalError) *internalError = 1;
+	}
+
+	S->size = STACK_CHUNK_SIZE;
+	S->a[0] = N_PROG; 				// Výchozí neterminál je <prog>
+}
+
+void parserSyntaxStackDelete(SyntaxStack *S){
+	free(S->a);
+}
+
+void parserSyntaxStackPush(SyntaxStack *S, tType type, int *internalError){
+	if (S->top == S->size){
+		S->size += STACK_CHUNK_SIZE;
+		S->a = realloc(S->a, S->size * sizeof(tType));
+		if(S->a == NULL){
+			fprintf(stderr, "[INTERNAL ERROR]: Failed malloc during stack expansion!\n");
+			if (!*internalError) *internalError = 1;
+		}
+	}
+	
+	S->a[S->top] = type;
+	S->top++;
+	S->last++;
+}
+
+tType parserSyntaxStackPop(SyntaxStack *S, int *internalError){
+	if (S->top==0) {
+		fprintf(stderr, "[INTERNAL ERROR]: Stack underflow!\n");
+		if (!*internalError) *internalError = 1;
+		return(T_UNKNOWN);
+	}	
+	else {
+		S->last--;
+		return(S->a[S->top--]); 
+	}	
+}
+
+
+
+
+/*****************************************************SÉMANTIKA***************************************************************************/
+
+void parserSemanticsInitBuiltIn(psTree *funcTable){
+	symTabInsert(funcTable, "print", parserSemanticsInitData(FUNC, NULL, -1));
+	symTabInsert(funcTable, "inputs", parserSemanticsInitData(FUNC, NULL, 0));
+	symTabInsert(funcTable, "inputi", parserSemanticsInitData(FUNC, NULL, 0));
+	symTabInsert(funcTable, "inputf", parserSemanticsInitData(FUNC, NULL, 0));
+	symTabInsert(funcTable, "length", parserSemanticsInitData(FUNC, NULL, 1));
+	symTabInsert(funcTable, "substr", parserSemanticsInitData(FUNC, NULL, 3));
+	symTabInsert(funcTable, "ord", parserSemanticsInitData(FUNC, NULL, 2));
+	symTabInsert(funcTable, "chr", parserSemanticsInitData(FUNC, NULL, 1));
+	return;
+}
+
+void parserSemanticsPreRun(pToken *token, psTree *funcTable, pSemanticsStack semanticError, int *internalError, int *error){
+	if((*token)->type == T_ID){
+
+		if((*token)->prevToken != NULL && (*token)->prevToken->type == T_DEF){
+			
+			if(!(symTabSearch(funcTable, (*token)->data))){
+				psTree localFrame;
+				symTabInit(&localFrame);
+				psData data = parserSemanticsInitData(FUNC, localFrame, 0);
+				pToken param;
+				if((*token)->nextToken != NULL) param = (*token)->nextToken->nextToken;
+
+				while(param != NULL){
+					if(param->type == T_COMMA){
+						param = param->nextToken;
+					}
+
+					else if(param->type == T_ID){
+						symTabInsert(&localFrame, param->data, parserSemanticsInitData(VAR, NULL, 0));
+						param = param->nextToken;
+						data->params++;
+					}
+
+					else if(param->type == T_STRING || param->type == T_FLOAT || param->type == T_INTEGER || param->type == T_NIL){
+						*error = 42;
+					}
+
+					else break;
+				}
+
+				symTabInsert(funcTable, (*token)->data, data);
+			}
+
+			else{
+				 parserSemanticStackPush(semanticError, 1, (*token)->data, internalError, (*token)->linePos, (*token)->colPos);
+			}
+		}
+	}
+}
+
+void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree *varTable, psTree *localTable, pSemanticsStack semanticError, bool inFunc, int *internalError){
+	
+	/*******************************Local frame***********************************************************/
+
+	if(inFunc && token->type == T_DEF){	// Nacházíme se ve funkci, tedy zřídíme localTable a zapamatujem si token s názvem funkce
+		*localTable = symTabSearch(funcTable, token->nextToken->data)->localFrame; // Najdem localTable v tabulce fukcí
+		*func = token->nextToken;	// Identifikátor funkce po DEF
+	}
+
+	/*******************************Definice proměnné*****************************************************/
+
+	if(token->type == T_ID && token->nextToken->type == T_ASSIGN){	// Je-li to definice proměnné
+		if(!inFunc){					// A pokud nejsme nikde ve funkci
+			if(symTabSearch(funcTable, token->data)){
+				parserSemanticStackPush(semanticError, 2, token->data, internalError, token->linePos, token->colPos);
+			}
+			symTabInsert(varTable, token->data, parserSemanticsInitData(VAR, NULL, 0));
+		}
+
+		else{							// Pokud jsme ve funkci
+			if(symTabSearch(funcTable, token->data)){
+				parserSemanticStackPush(semanticError, 3, token->data, internalError, token->linePos, token->colPos);
+			}
+			symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0));
+		}
+	}
+
+	/*******************************Volání funkce**********************************************************/
+
+	else if((token->type == T_ID && symTabSearch(funcTable, token->data)) || (token->type == T_ID && token->prevToken->type != T_DEF && (token->nextToken->type == T_LBRCKT || token->nextToken->type == T_ID || token->nextToken->type == T_FLOAT || token->nextToken->type == T_STRING || token->nextToken->type == T_INTEGER || token->nextToken->type == T_NIL))){
+		if(symTabSearch(funcTable, token->data)){				// Pokud je definovaná
+			
+			psData func_data = symTabSearch(funcTable, token->data);	// Uložit si data o funkci z tabulky (kvůli počtu parametrů)
+			pToken param = NULL;
+
+			if(token->nextToken->type == T_LBRCKT) param = token->nextToken->nextToken; // Dostat se k prvnímu parametru
+			else param = token->nextToken;
+
+			int params = 0;
+
+			while(param->type != T_EOL && param->type != T_RBRCKT){			// Spočítáme parametry
+
+				if(param->data != NULL && (symTabSearch(funcTable, param->data))){	// Pokud je token ID (čárka třeba nemá data) a existuje v tabulce funkcí
+					parserSemanticStackPush(semanticError, 5, token->data, internalError, token->linePos, token->colPos);
+				}
+
+				if(param->type == T_COMMA){
+					param = param->nextToken;
+				}
+
+				else if(param->type == T_ID || param->type == T_INTEGER || param->type == T_STRING || param->type == T_FLOAT || param->type == T_NIL){
+					param = param->nextToken;
+					params++;
+				}
+			}
+
+			if(func_data->params == -1 && params >= 1){}	// Print může mít argumentů, kolik chce, pokud je to alespoň jeden
+
+			else if(params != func_data->params){
+				parserSemanticStackPush(semanticError, 6, token->data, internalError, token->linePos, token->colPos);
+			}
+		}
+
+		else{
+			parserSemanticStackPush(semanticError, 4, token->data, internalError, token->linePos, token->colPos);
+		}
+	}
+
+	/*******************************Proměnná v expressionu**************************************************/
+
+	else if(token->type == T_ID){	// Je-li to osamocené ID, někde v expressionu
+		if(!inFunc){					// A pokud nejsme nikde ve funkci
+
+			psData data = symTabSearch(varTable, token->data);
+
+			if(data == NULL){
+				parserSemanticStackPush(semanticError, 7, token->data, internalError, token->linePos, token->colPos);
+			}
+		}
+
+		else{	// Pokud jsme ve funkci
+
+			if((*func)->linePos == token->linePos){		// Pokud jsou to definice proměnných v hlavičce funkce
+				symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0));	// Zadefinujeme je do local rámce
+			}
+
+			else{
+				psData data = symTabSearch(localTable, token->data);
+				
+				if((data == NULL) && (symTabSearch(funcTable, token->data) == NULL || symTabSearch(funcTable, token->data)->type != FUNC)){
+					parserSemanticStackPush(semanticError, 7, token->data, internalError, token->linePos, token->colPos);
+				}
+			}
+		}
+	}
+
+
+}
+
+psData parserSemanticsInitData(sType type, struct sTree *localFrame, int params){
+	psData data = malloc(sizeof(struct sData));
+	data->type = type;
+	data->localFrame = &(*localFrame);
+	data->params = params;
+	return data;
+}
+
+void parserSemanticsInFunc(bool *inFunc, int *inAux, pToken token){
+	if(token->type == T_DEF){
+		*inFunc = true;
+	}
+
+	else if(token->type == T_IF || token->type == T_WHILE){
+		*inAux = *inAux + 1;
+	}
+
+	else if(token->type == T_END && !(*inAux)){
+		*inFunc = false;
+	}
+
+	else if(token->type == T_END && *inAux){
+		*inAux = *inAux - 1;
+	}
+}
+
+int parserSemanticError(pSemanticsStack semanticError){
+	int error = 0;
+
+	for(int i = 0; i < semanticError->top; i++){
+		if(semanticError->ErrorArray[i].error == 1){
+			fprintf(stderr, "[SEMANTICS] Error: Attempted to redefine function %s!\n", semanticError->ErrorArray[i].name);
+			if(!error) error = 3;
+		}
+
+		else if(semanticError->ErrorArray[i].error == 2){
+			fprintf(stderr, "[SEMANTIC] Error: Variables (%s %u:%u) and functions must have different IDs!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
+			if(!error) error = 3;
+		}
+
+		else if(semanticError->ErrorArray[i].error == 3){
+			fprintf(stderr, "[SEMANTIC] Error: Can't name a variable (%s %u:%u) same as a previously defined function!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
+			if(!error) error = 3;
+		}
+
+		else if(semanticError->ErrorArray[i].error == 4){
+			fprintf(stderr, "[SEMANTIC] Error: Calling an undefined function %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
+			if(!error) error = 3;
+		}
+
+		else if(semanticError->ErrorArray[i].error == 5){
+			fprintf(stderr, "[SEMANTIC] Error: Function %s (%u:%u) can't have another function as an argument!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
+			if(!error) error = 6;
+		}
+
+		else if(semanticError->ErrorArray[i].error == 6){
+			fprintf(stderr, "[SEMANTIC] Error: Wrong number of arguments in function %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
+			if(!error) error = 5;
+		}
+
+		else if(semanticError->ErrorArray[i].error == 7){
+			fprintf(stderr, "[SEMANTIC] Error: Undefined variable %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
+			if(!error) error = 3;
+		}
+
+		else{
+			fprintf(stderr, "[INTERNAL] Error: A seriously weird thing somehow happened!\n");
+			if(!error) error = 99;
+		}
+	}
+	
+	return error;
+}
+
+
+
+
+/*******************************************************STACK*****************************************************************************/
+
+void parserSemanticStackInit(pSemanticsStack *S, int *internalError){
+	if(!S) return;
+	if(!(*S = malloc(sizeof(struct SemanticsStack)))){
+		if (!*internalError) *internalError = 2;
+	}
+
+	(*S)->ErrorArray = NULL;
+	(*S)->top = 0;
+}
+
+void parserSemanticStackDelete(pSemanticsStack *S){
+	free((*S)->ErrorArray);
+	free(*S);
+}
+
+void parserSemanticStackPush(pSemanticsStack S, int error, char *name, int *internalError, int line, int col){
+	if(!(S->ErrorArray = realloc(S->ErrorArray, sizeof(struct Error) * (S->top + 1)))){
+		if (!*internalError) *internalError = 2;
+	}
+
+	else{
+		S->ErrorArray[S->top].error = error;
+		S->ErrorArray[S->top].name = name;
+		S->ErrorArray[S->top].line = line;
+		S->ErrorArray[S->top].col = col;
+		S->top++;
+	}
+}
