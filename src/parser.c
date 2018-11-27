@@ -372,7 +372,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 	else if(S->a[S->last] == N_EXPR_O){
 		*token = (*token)->prevToken;
 		if(exprParse(&(*token), localTable)) 
-			*error = 69;
+			*error = 32;
 
 		if((*token)->type == T_EOL ||
 		(*token)->type == T_EOF){
@@ -384,7 +384,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 
 	else if(S->a[S->last] == N_EXPR){
 		if (exprParse(&(*token), localTable)) 
-			*error = 69;
+			*error = 32;
 
 		if((*token)->type == T_EOL ||
 		(*token)->type == T_THEN ||
