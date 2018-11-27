@@ -7,7 +7,7 @@ int parser(pToken *List){
 	pToken preRun = (*List);	// List pro pre-run
 	
 	int error = 0;				// Chyba vstupního kódu
-	int internalError = 0;			// Interní chyba překladače
+	int internalError = 0;		// Interní chyba překladače
 
 	psTree funcTable;			// Hlavní tabulka definovaných funkcí
 	psTree varTable;			// Hlavní tabulka proměnných
@@ -638,6 +638,17 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 
 			if((*func)->linePos == token->linePos){		// Pokud jsou to definice proměnných v hlavičce funkce
 				symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0));	// Zadefinujeme je do local rámce
+
+				pToken aux = token->prevToken;
+				while(aux->type != T_LBRCKT){	// Zkontroluju předchozí, jestli se náhodou nevyskytujou duplicity
+					if(aux->type == T_COMMA) aux = aux->prevToken;
+					else{
+						if(!strcmp(token->data, aux->data)) 
+							parserSemanticStackPush(semanticError, 8, (*func)->data, internalError, (*func)->linePos, aux->colPos);
+
+						aux = aux->prevToken;
+					}
+				}
 			}
 
 			else{
@@ -649,8 +660,6 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 			}
 		}
 	}
-
-
 }
 
 psData parserSemanticsInitData(sType type, struct sTree *localTable, int params){
@@ -716,6 +725,22 @@ int parserSemanticError(pSemanticsStack semanticError){
 		else if(semanticError->ErrorArray[i].error == 7){
 			fprintf(stderr, "[SEMANTIC] Error: Undefined variable %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
 			if(!error) error = 3;
+		}
+
+		else if(semanticError->ErrorArray[i].error == 8){
+			bool done = false;
+
+			for(int k = 0; k < i; k++){
+				if(semanticError->ErrorArray[i].col == semanticError->ErrorArray[k].col &&
+				semanticError->ErrorArray[i].line == semanticError->ErrorArray[k].line &&
+				semanticError->ErrorArray[i].error == semanticError->ErrorArray[k].error)
+					done = true;
+			}
+
+			if(!done){
+				fprintf(stderr, "[SEMANTIC] Error: Can't have arguments of the same name in function %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
+				if(!error) error = 6;
+			}
 		}
 
 		else{
