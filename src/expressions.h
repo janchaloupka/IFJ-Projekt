@@ -72,6 +72,7 @@ eRelTerm exprConvTypeToTerm(tType tokenType);
 eRelation exprGetRelation(eRelTerm currTerm, eRelTerm newTerm);
 
 void exprStackInit(peStack *stack);
+void exprStackDispose(peStack *stack);
 void exprStackPush(peStack stack, peItem item);
 peItem exprStackPop(peStack stack);
 int exprStackFindTerm(peStack stack);

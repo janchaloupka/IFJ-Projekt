@@ -124,6 +124,7 @@ void generateBaseCode(){
 DEFVAR GF@$_line\n\
 DEFVAR GF@$_col\n\
 DEFVAR GF@$tmp\n\
+DEFVAR GF@$tmp2\n\
 \n\
 MOVE GF@$_line string@TBD\n\
 MOVE GF@$_col string@TBD\n\
@@ -161,6 +162,21 @@ LABEL $decideDivOp\n\
 	RETURN\n\
 	LABEL $decideDivOp$float\n\
 	DIVS\n\
+	RETURN\n\
+\n\
+LABEL $checkIfAdd\n\
+	CALL $getType\n\
+	JUMPIFEQ $checkIfAdd$string TF@%%return string@string\n\
+	JUMPIFEQ $checkIfAdd$num TF@%%return string@int\n\
+	JUMPIFNEQ $printTypeError TF@%%return string@float\n\
+	LABEL $checkIfAdd$num\n\
+	ADDS\n\
+	RETURN\n\
+	LABEL $checkIfAdd$string\n\
+	POPS GF@$tmp2\n\
+	POPS GF@$tmp\n\
+	CONCAT GF@$tmp GF@$tmp GF@$tmp2\n\
+	PUSHS GF@$tmp\n\
 	RETURN\n\
 \n\
 LABEL $checkIfNum\n\

@@ -458,40 +458,40 @@ void _scannerHandleError(sState state, char currChar, unsigned int line, unsigne
 
 const char *scannerTypeToString(tType type){
 	switch(type){
-		case T_ID: 		return "ID"; break;
-		case T_DEF: 	return "DEF"; break;
-		case T_DO: 		return "DO"; break;
-		case T_ELSE: 	return "ELSE"; break;
-		case T_END: 	return "END"; break;
-		case T_IF: 		return "IF"; break;
-		case T_NOT:	 	return "NOT"; break;
-		case T_AND:		return "AND"; break;
-		case T_OR:		return "OR"; break;
-		case T_TRUE:	return "TRUE"; break;
-		case T_FALSE:	return "FALSE"; break;
-		case T_NIL: 	return "NIL"; break;
-		case T_THEN:	return "THEN"; break;
-		case T_WHILE: 	return "WHILE"; break;
-		case T_RBRCKT: 	return "RBRCKT"; break;
-		case T_LBRCKT: 	return "LBRCKT"; break;
-		case T_COMMA: 	return "COMMA"; break;
-		case T_EOL: 	return "EOL"; break;
-		case T_EOF: 	return "EOF"; break;
-		case T_ADD: 	return "ADD"; break;
-		case T_SUB: 	return "SUB"; break;
-		case T_MUL: 	return "MUL"; break;
-		case T_DIV: 	return "DIV"; break;
-		case T_EQL: 	return "EQL"; break;
-		case T_NEQ: 	return "NEQ"; break;
-		case T_LT: 		return "LT"; break;
-		case T_GT: 		return "GT"; break;
-		case T_LTE: 	return "LTE"; break;
-		case T_GTE: 	return "GTE"; break;
-		case T_ASSIGN: 	return "ASSIGN"; break;
-		case T_INTEGER: return "INTEGER"; break;
-		case T_FLOAT: 	return "DOUBLE"; break;
-		case T_STRING: 	return "STRING"; break;
-		default: return "UNKNOWN"; break;
+		case T_ID: 		return "ID";
+		case T_DEF: 	return "DEF";
+		case T_DO: 		return "DO";
+		case T_ELSE: 	return "ELSE";
+		case T_END: 	return "END";
+		case T_IF: 		return "IF";
+		case T_NOT:	 	return "NOT";
+		case T_AND:		return "AND";
+		case T_OR:		return "OR";
+		case T_TRUE:	return "TRUE";
+		case T_FALSE:	return "FALSE";
+		case T_NIL: 	return "NIL";
+		case T_THEN:	return "THEN";
+		case T_WHILE: 	return "WHILE";
+		case T_RBRCKT: 	return "RBRCKT";
+		case T_LBRCKT: 	return "LBRCKT";
+		case T_COMMA: 	return "COMMA";
+		case T_EOL: 	return "EOL";
+		case T_EOF: 	return "EOF";
+		case T_ADD: 	return "ADD";
+		case T_SUB: 	return "SUB";
+		case T_MUL: 	return "MUL";
+		case T_DIV: 	return "DIV";
+		case T_EQL: 	return "EQL";
+		case T_NEQ: 	return "NEQ";
+		case T_LT: 		return "LT";
+		case T_GT: 		return "GT";
+		case T_LTE: 	return "LTE";
+		case T_GTE: 	return "GTE";
+		case T_ASSIGN: 	return "ASSIGN";
+		case T_INTEGER: return "INTEGER";
+		case T_FLOAT: 	return "DOUBLE";
+		case T_STRING: 	return "STRING";
+		default: 		return "UNKNOWN";
 	}
 }
 
@@ -503,7 +503,7 @@ void scannerPrintToken(pToken token){
 
 	printf("#%d:%d\t", token->linePos, token->colPos);
 	
-	printf(scannerTypeToString(token->type));
+	printf("%s", scannerTypeToString(token->type));
 	
 	switch(token->type){
 		case T_STRING:
