@@ -1,0 +1,5 @@
+x = "hchkrdtn"
+
+if x == "hchkrdtn" then
+  print "Tvrde samohlasky"
+end

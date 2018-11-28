@@ -1,0 +1,15 @@
+def foo (param1, param2)
+  if param1 < param2 #!!then
+    print param1
+    print " je mensi nez "
+    print param2
+  else
+    print param2
+    print " je mensi nez "
+    print param1
+  end
+end
+
+a = 5
+b = 6
+foo a, b

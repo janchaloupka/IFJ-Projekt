@@ -1,0 +1,29 @@
+# fce muze mit na konci vykricnik nebo otaznik
+def foo? ()
+  print "im in foo"
+end
+
+# spravne
+def bar! ()
+  print "im in bar"
+end
+
+# chyba! redefinice - err code: 3
+def bar! ()
+  print "im in bar"
+end
+
+# chyba! nesmi byt definovano s velkym pismenem
+def BlueCar! ()
+  print "im in bar"
+end
+
+# chyba! err code: 2
+def lueCar! ()
+  print "im in bar"
+end
+
+# chyba! err code: 2
+def redCar ()
+  print "im in bar"
+end

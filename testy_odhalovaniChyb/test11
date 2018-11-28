@@ -1,0 +1,20 @@
+a = 5
+print a
+a = "Pepa\n"
+print a
+
+i = 5
+
+if i == 5 then
+  a = 3.145678
+  			#tady
+  a = (a + 1 -/ (4 * 5)) / 8
+  print a
+  print "\n"
+end
+
+while i > 0 do
+  print i
+  print "\n"
+  i = i - 2 + 2 - 1
+end

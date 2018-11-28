@@ -1,0 +1,36 @@
+# fce muze mit na konci vykricnik nebo otaznik
+def foo? ()
+  print "im in foo"
+end
+
+# spravne
+def bar! ()
+  print "im in bar0"
+end
+
+# chyba! redefinice
+def bar! ()
+  print "im in bar1"
+end
+
+# chyba! 
+def .lueCar! ()
+  print "im in .lurCar"
+end
+
+# chyba! 
+def !lueCar! ()
+  print "im in !lueCar"
+end
+
+# chyba!
+def 1edCar ()
+  print "im in 1edCar"
+end
+
+foo?
+bar!
+bar!
+.lueCar!
+!lueCar!
+1edCar

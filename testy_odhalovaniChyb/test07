@@ -1,0 +1,17 @@
+def foo ()
+  print "Jsem ve foo"
+  if 1 == 2 then
+    x = "mrtvy kod" # melo by se alokovat v tabulce symbolu
+    print x
+    y = "nothin"
+    while 1 do
+      y
+    end
+  end
+end
+
+i = 10
+while i < 10 #!!do
+  foo
+  i = i -1
+end

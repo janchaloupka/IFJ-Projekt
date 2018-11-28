@@ -1,0 +1,11 @@
+def vytiskniNasobilku (zaklad)
+  i = 1
+  while i <= 10 do
+    print zaklad * i
+    print " "
+    i = i + 1
+  end
+end
+
+nasobilka = 5
+vytiskniNasobilku nasobilka
