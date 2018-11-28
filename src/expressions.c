@@ -119,7 +119,7 @@ int exprParse(pToken *token, psTree idTable){
 				{
 					int stackret = exprStackParse(stack, idTable);
 					if(stackret > 0){
-						fprintf(stderr, "Nesouhlasí gramatika expr (errid: %d)\n", stackret);
+						// Chybové hlášení je v exprStackParse
 						retCode = stackret;
 					}
 				}
@@ -135,7 +135,7 @@ int exprParse(pToken *token, psTree idTable){
 			case E_EMPTY:
 				if(stackT == newT && stackT == E_$){
 					if(stack->top < 0){
-						fprintf(stderr, "Expr nemuze byt prazdnej pyco\n");
+						fprintf(stderr, "[SYNTAX] Error on line %d:%d - Expression cannot be empty\n", (*token)->linePos, (*token)->colPos);
 						retCode = 2;
 					}else {
 						retCode = 0;
@@ -257,6 +257,7 @@ int exprStackParse(peStack stack, psTree idTable){
 					break;
 				case T_ID:
 					if(symTabSearch(&idTable, item->val.term->data) == NULL){
+						fprintf(stderr, "[SEMANTIC] Error on line %d:%d - Variable \"%s\" in expression is not defined\n", item->val.term->linePos, item->val.term->colPos, item->val.term->data);
 						return 3; // Chyba
 					}
 					out = varToInterpret(item->val.term->data);
@@ -312,6 +313,7 @@ int exprStackParse(peStack stack, psTree idTable){
 		case T_ADD:
 			if(hasUnknown) printf("CALL $checkIfAdd\n");
 			if(!isSame || (type != E_INT && type != E_FLOAT && type != E_STRING && type != E_UNKNOWN)){
+				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
 				return 4; // Error
 			}
 			break;
@@ -319,6 +321,7 @@ int exprStackParse(peStack stack, psTree idTable){
 		case T_MUL:
 			if(hasUnknown) printf("CALL $checkIfNum\n");
 			if(!isSame || (type != E_INT && type != E_FLOAT && type != E_UNKNOWN)){
+				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
 				return 4; // Error
 			}
 			break;
@@ -328,12 +331,14 @@ int exprStackParse(peStack stack, psTree idTable){
 		case T_GTE:
 			if(hasUnknown) printf("CALL $checkIfLtGt\n");
 			if(!isSame || (type != E_FLOAT && type != E_INT && type != E_UNKNOWN && type != E_STRING)){
+				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
 				return 4; // Error
 			}
 			break;
 		case T_EQL:
 		case T_NEQ:
 			if(isSingle){
+				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
 				return 4; // Error
 			}else if(hasUnknown) printf("CALL $checkIfEql\n");
 			else if(!isSame) printf("POPS GF@$tmp\nPOPS GF@$tmp\nPUSHS bool@false\n");
@@ -345,6 +350,7 @@ int exprStackParse(peStack stack, psTree idTable){
 				printf("POPS GF@$tmp\n");
 			}
 			if(!isSingle || (type != E_BOOL && type != E_UNKNOWN)){
+				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
 				return 4; // Error
 			}
 			break;
@@ -352,10 +358,16 @@ int exprStackParse(peStack stack, psTree idTable){
 		case T_OR:
 			if(hasUnknown) printf("CALL $checkIfBool\n");
 			if(!isSame || (type != E_BOOL && type != E_UNKNOWN)){
+				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
 				return 4; // Error
 			}
 			break;
 		default:
+			fprintf(stderr, "[INTERNAL] Error on line %d:%d - Got unexpected operator in expression (%s)", 
+				item->val.term->linePos,
+				item->val.term->colPos,
+				scannerTypeToString(item->val.term->type)
+				);
 			return 99; // Return
 			break;
 	}
@@ -438,4 +450,41 @@ int exprStackParse(peStack stack, psTree idTable){
 	exprStackPush(stack, item);
 
 	return 0;
+}
+
+const char *exprTermTypeToString(eTermType type){
+	switch (type)
+	{
+		case E_INT: return "INT";
+		case E_FLOAT: return "FLOAT";
+		case E_STRING: return "STRING";
+		case E_NIL: return "NIL";
+		case E_BOOL: return "BOOL";
+		case E_UNKNOWN: return "VAR";
+	}
+
+	return "UNKNOWN";
+}
+
+void exprSPPrintError(bool isSingle, bool isSame, eTermType lt, eTermType rt, pToken op){
+	fprintf(stderr, "[SEMANTIC] Error on line %d:%d - Type error; ", op->linePos, op->colPos);
+	fprintf(stderr, "(Operation %s) ", scannerTypeToString(op->type));
+	if(op->type != T_NOT){
+		if(isSingle){
+			fprintf(stderr, "Missing left operand");
+		}else if(!isSame){
+			fprintf(stderr, "Operands are not the same type (left: %s, right: %s)", 
+				exprTermTypeToString(lt),
+				exprTermTypeToString(rt)
+				);
+		}else{
+			fprintf(stderr, "Incopatible types %s", 
+				exprTermTypeToString(lt == E_UNKNOWN ? rt : lt)
+				);
+		}
+	}else{
+		fprintf(stderr, "Operand type %s is not compatible with this operation", exprTermTypeToString(rt));
+	}
+	
+	fprintf(stderr, "\n");
 }

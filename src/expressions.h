@@ -78,3 +78,5 @@ peItem exprStackPop(peStack stack);
 int exprStackFindTerm(peStack stack);
 void exprStackInsertOpen(peStack stack, int pos);
 int exprStackParse(peStack stack, psTree idTable);
+const char *exprTermTypeToString(eTermType type);
+void exprSPPrintError(bool isSingle, bool isSame, eTermType lt, eTermType rt, pToken op);

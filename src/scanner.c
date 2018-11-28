@@ -449,7 +449,9 @@ void _scannerHandleError(sState state, char currChar, unsigned int line, unsigne
 		fprintf(stderr, "0x%x", currChar);
 	}
 	
-	if(state == STATE_INT0) 
+	if((currChar == '\r' || currChar == EOL) && state == STATE_STR){
+		fprintf(stderr, "; Did you forget to terminate the string?");
+	}else if(state == STATE_INT0) 
 		fprintf(stderr, " after '0'");
 	else if(state >= STATE_BCMT7 && state <= STATE_BCMT11) 
 		fprintf(stderr, "; Reached end of file but block comment is still opened");
