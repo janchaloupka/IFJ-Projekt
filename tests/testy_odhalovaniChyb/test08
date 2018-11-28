@@ -1,7 +1,0 @@
-def vratJednicku #()
-  if 1 == 1 then 
-    x = (1 * 1 + 1 / 1) / 0 #!!
-  end
-end
-
-print vratJednicku

@@ -7,11 +7,60 @@ int main(int argc, char const *argv[])
 		if(strcmp(argv[1], "j32") == 0) return janchDebug();
 
 		if(strcmp(argv[1], "yell") == 0) return yellDebug();
+
+		if(strcmp(argv[1], "vita") == 0) return vitaDebug();
 	}
 
 	return 0;
 }
+int vitaDebug(){
 
+	FILE *file_test[11]; // pocet testu -> lepsi udelat makro
+  	FILE *file_expected[11];
+
+  	char c = ' ';
+  	char test[30];
+    char testOut[30];
+    pToken token = NULL;
+
+  	for (int i = 0; i < 11; i++)
+  	{
+  		printf("\033[1;33m");
+	    printf("------------------- TEST_%d -------------------|\n", i+1);
+	    printf("\033[0m");
+	    sprintf(test, "tests/tests_corr/test%d", i+1);
+	    sprintf(testOut, "tests/tests_corr/test%d.out", i+1);
+
+	    if ((file_expected[i] = fopen(testOut, "r")) == NULL){
+	    	printf("nepodarilo se otevrit soubor %s", testOut);
+	    	return -1;
+	    }
+	    if ((file_test[i] = fopen(test, "r")) == NULL){
+	    	printf("nepodarilo se otevrit soubor %s", test);
+	    	return -1;
+	    }
+	    
+	    c = ' ';
+	    while (c != EOF) {
+		    c = getc(file_expected[i]);
+		    printf("%c",c);
+	    }
+	    printf("\n\n");
+
+        scannerGetTokenList(&token, file_test[i]);
+        parser(&token);
+        fclose(file_test[i]);
+        fclose(file_expected[i]);
+		scannerFreeTokenList(&token);
+		_scannerFSM(NULL, NULL);
+		printf("\033[1;31m");
+      	printf("\n________________END OF TEST_%d_________________|\n", i+1);
+      	printf("\033[0m");
+      	if (i < 10) printf("|\n|\n");
+
+  	}
+  return 0;
+}
 int yellDebug(){
 	FILE *source1 = fopen("tests/test-code.1", "r");
 	FILE *source2 = fopen("tests/test-code.2", "r");
@@ -40,7 +89,7 @@ int yellDebug(){
 
 	return 0;
 }
- 
+
 int janchDebug(){
 	FILE *source = fopen("tests/test-expr", "r");
 	

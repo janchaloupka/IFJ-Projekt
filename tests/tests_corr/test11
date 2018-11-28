@@ -3,7 +3,7 @@ print a
 a = "Pepa\n"
 print a
 
-i = 5
+i = 5a
 
 if i == 5 then
   a = 3.145678

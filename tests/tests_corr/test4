@@ -4,7 +4,7 @@ def _foo (a , b)
   print x
 end
 
-def _bar ()
+def _bar (
   a = 5
   b = 6
   print "Soucin 5 a 6 je "

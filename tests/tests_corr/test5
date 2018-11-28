@@ -1,5 +1,5 @@
 def foo (param1, param2)
-  if param1 < param2 then
+  i param1 < param2 then
     print param1
     print " je mensi nez "
     print param2

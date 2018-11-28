@@ -1,5 +1,0 @@
-def vratJednicku ()
-  1
-end
-
-print vratJednicku

@@ -1,0 +1,4 @@
+# fce muze mit na konci vykricnik nebo otaznik
+def .foo? ()
+  print "im in foo"
+end

@@ -1,6 +1,5 @@
-x = "hchkrdtn"
+x = hchkrdtn"
 
 if x == "hchkrdtn" then
   print "Tvrde samohlasky"
-  print x + 1 #!!
 end

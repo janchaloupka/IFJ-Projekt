@@ -1,4 +1,4 @@
-def vytiskniNasobilku (zaklad)
+def vytiskniNasobilku {zaklad}
   i = 1
   while i <= 10 do
     print zaklad * i

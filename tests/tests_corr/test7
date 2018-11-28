@@ -1,6 +1,6 @@
 def foo ()
   print "Jsem ve foo"
-  if 1 == 2 then
+  if 1 ==d 2 then
     x = "mrtvy kod" # melo by se alokovat v tabulce symbolu
     print x
   end

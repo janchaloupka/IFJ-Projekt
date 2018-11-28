@@ -1,0 +1,3 @@
+print "Testovani escape sekvenci.\n"
+sprint "Hello\nWorld!\32"
+print "Dnes\nje\svenku\\fakt\s\x68nusne"

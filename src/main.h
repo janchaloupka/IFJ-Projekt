@@ -19,3 +19,5 @@ int main(int argc, char const *argv[]);
 int janchDebug();
 
 int yellDebug();
+
+int vitaDebug();

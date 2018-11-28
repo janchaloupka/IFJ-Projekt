@@ -1,8 +1,0 @@
-def foo ()
-  x = 50
-  y = 40
-  z = (x/y)*y+x)#chyba
-end
-
-retVal = foo
-print retVal
