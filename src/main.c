@@ -30,8 +30,8 @@ int vitaDebug(){
 			printf("\033[1;33m");
     	printf("------------------- TEST_%d -------------------|\n", i+1);
     	printf("\033[0m");
-    	sprintf(test, "tests/tests_corr/test%d", i+1);
-    	sprintf(testOut, "tests/tests_corr/test%d.out", i+1);
+    	sprintf(test, "tests/tests_err/test%d", i+1);
+    	sprintf(testOut, "tests/tests_err/test%d.out", i+1);
 
 		  if ((file_expected[i] = fopen(testOut, "r")) == NULL){
 		  		printf("nepodarilo se otevrit soubor %s", testOut);
