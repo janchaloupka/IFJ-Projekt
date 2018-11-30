@@ -68,12 +68,12 @@ char *stringToInterpret(char *rawString){
 }
 
 char *intToInterpret(char *rawInt){
-	char *out = malloc(sizeof(char) * (strlen(rawInt) + 5));
-	
-	strcpy(out, "int@");
-	strcat(out, rawInt);
-	
-	return out;
+	char *out = malloc(sizeof(char) * 50);
+	if(rawInt[0] == '0' && strlen(rawInt) > 1 && rawInt[1] == 'b'){
+		// printf neumí rozeznat 0b
+		sprintf(out, "int@%ld", strtol(&rawInt[2], NULL, 2));
+	}else sprintf(out, "int@%ld", strtol(rawInt, NULL, 0));
+	return realloc(out, strlen(out));
 }
 
 char *floatToInterpret(char *rawFloat){

@@ -92,24 +92,24 @@ int yellDebug(){
 }
 
 int janchDebug(){
-	FILE *source = fopen("tests/test-expr", "r");
+	FILE *source = fopen("tests/test-expr-base-conv", "r");
 
-	psTree localId;
-	symTabInit(&localId);
-	psData data = malloc(sizeof(struct sData));
-	data->localFrame = NULL;
-	symTabInsert(&localId, "a", data);
+	//psTree localId;
+	//symTabInit(&localId);
+	//psData data = malloc(sizeof(struct sData));
+	//data->localFrame = NULL;
+	//symTabInsert(&localId, "a", data);
 
 	pToken token = NULL;
-	scannerGetTokenList(&token, source);
-	generateBaseCode();
-	printf("CREATEFRAME\nPUSHFRAME\nDEFVAR LF@a\nMOVE LF@a string@hello\n");
-	parser(&token);
-	//exprParse(&token, localId);
-	printf("\nPOPS GF@$tmp\nWRITE GF@$tmp\nWRITE string@\\010\n");
-
+	printf("ret: %d\n", scannerGetTokenList(&token, source));
+	//generateBaseCode();
+	//printf("CREATEFRAME\nPUSHFRAME\nDEFVAR LF@a\nMOVE LF@a string@hello\n");
+	//parser(&token);
+	exprParse(&token, NULL/*localId*/);
+	//printf("\nPOPS GF@$tmp\nWRITE GF@$tmp\nWRITE string@\\010\n");
+	//scannerPrintTokenList(token);
 	fclose(source);
 	scannerFreeTokenList(&token);
-	symTabDispose(&localId);
+	//symTabDispose(&localId);
 	return 0;
 }
