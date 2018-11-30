@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include "scanner.h"
 #include "symtable.h"
+#include "codegen.h"
 
 #define STACK_CHUNK_SIZE 1000                      // Velikost alokační jednotky zásobníku
 

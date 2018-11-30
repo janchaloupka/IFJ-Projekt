@@ -1,22 +1,3 @@
-//expression (useless pro LL tabulku)
-<expr>      -> <type>
-<expr>      -> ( <expr_id> )
-<expr>      -> not <expr_id>
-<expr>      -> <expr> <expr_o>
-<expr_id>   -> id <expr_o>
-<expr_id>   -> <expr>
-<expr_o>    -> + <expr_id> 
-<expr_o>    -> - <expr_id> 
-<expr_o>    -> / <expr_id> 
-<expr_o>    -> * <expr_id> 
-<expr_o>    -> == <expr_id> 
-<expr_o>    -> != <expr_id> 
-<expr_o>    -> < <expr_id> 
-<expr_o>    -> > <expr_id> 
-<expr_o>    -> <= <expr_id> 
-<expr_o>    -> >= <expr_id> 
-<expr_o>    -> ε 
-
 //program 
 <prog>      -> <def_func> EOL <prog>
 <prog>      -> <body> <prog>
@@ -27,6 +8,9 @@
 <type>		-> integer
 <type>		-> float
 <type>		-> string
+<type>		-> bool
+<type_id>	-> <type>
+<type_id>	-> id
 
 //body
 <body>      -> ε
@@ -51,8 +35,7 @@
 <params>    -> <type> <params_n>
 <params>    -> id <params_n>
 <params>    -> ε
-<params_n>  -> , id <params_n> TODO
-<params_n>  -> , <type> <params_n> TODO
+<params_n>  -> , <type_id> <params_n>
 <params_n>  -> ε
 
 //statement

@@ -32,22 +32,13 @@ int parser(pToken *List){
 	while(preRun != NULL){	// Sémantický pre-run, naplnění tabulky definicemi funkcí
 		parserSemanticsPreRun(&preRun, &funcTable, semanticError, &internalError, &error);	// Naplnění tabulky definicí funkcí
 		parserSyntaxError(error, internalError, NULL, &S);	// Pouze pro výpis erroru 42
+		if(error) return error;
 		preRun = preRun->nextToken;
 	}
 
 	while(token != NULL){	// Syntaktická analýza + Sémantická analýza
 
 		pToken prevToken = token;
-
-		if(tokenChecked){
-			// Neudělej nic, protože jsi to už udělal
-		}
-
-		else{
-			parserSemanticsInFunc(&inFunc, &inAux, token);	// Jsme-li ve funkci - tj. mezi DEF a příslušným END
-			parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, semanticError, inFunc, &internalError); // Víceméně jen check IDček
-			tokenChecked = true;
-		}
 
 		if(S.a[S.last] > T_STRING){
 			if(!inFunc) localTable = varTable;
@@ -59,9 +50,18 @@ int parser(pToken *List){
 			parserSyntaxStackPop(&S, &internalError);
 			parserSyntaxIDFNCheck(token, &funcTable, &error);	// Kontrola ? a ! na konci proměnných
 
+			if(!tokenChecked){
+				parserSemanticsInFunc(&inFunc, &inAux, token);	// Jsme-li ve funkci - tj. mezi DEF a příslušným END
+				parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, semanticError, inFunc, &internalError); // Víceméně jen check IDček
+				tokenChecked = true;
+			}
+
 			token = token->nextToken;
 			tokenChecked = false;	// Nový token pro sémantickou analýzu
 		}
+
+		// Volání Klářino generování kódu
+		codeFromToken(S.a[S.last], token, localTable);
 
 		error = parserSyntaxError(error, internalError, &prevToken, &S);
 		if(error){
@@ -101,12 +101,23 @@ void parserSyntaxCompare(SyntaxStack S, pToken token, int *error){
 
 void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError, psTree localTable){
 	if(S->a[S->last] == N_PROG){
-		if((*token)->type == T_ID ||
+		if((*token)->type == T_DEF){
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_PROG, internalError);
+			parserSyntaxStackPush(&(*S), T_EOL, internalError);
+			parserSyntaxStackPush(&(*S), N_DEFUNC, internalError);
+		}
+
+		else if((*token)->type == T_ID ||
 		(*token)->type == T_NIL ||
 		(*token)->type == T_INTEGER ||
-		(*token)->type == T_STRING ||
 		(*token)->type == T_FLOAT ||
+		(*token)->type == T_STRING ||
 		(*token)->type == T_NOT ||
+		(*token)->type == T_TRUE ||
+		(*token)->type == T_FALSE ||
+		(*token)->type == T_ADD ||
+		(*token)->type == T_SUB ||
 		(*token)->type == T_LBRCKT ||
 		(*token)->type == T_IF ||
 		(*token)->type == T_WHILE ||
@@ -116,12 +127,6 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPush(&(*S), N_BODY, internalError);
 		}
 
-		else if((*token)->type == T_DEF){
-			parserSyntaxStackPop(&(*S), internalError);
-			parserSyntaxStackPush(&(*S), N_PROG, internalError);
-			parserSyntaxStackPush(&(*S), T_EOL, internalError);
-			parserSyntaxStackPush(&(*S), N_DEFUNC, internalError);
-		}
 
 		else if((*token)->type == T_EOF){
 			parserSyntaxStackPop(&(*S), internalError);
@@ -143,8 +148,12 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 
 		else if((*token)->type == T_NIL ||
 		(*token)->type == T_INTEGER ||
-		(*token)->type == T_STRING ||
 		(*token)->type == T_FLOAT ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_TRUE ||
+		(*token)->type == T_FALSE ||
+		(*token)->type == T_ADD ||
+		(*token)->type == T_SUB ||
 		(*token)->type == T_NOT ||
 		(*token)->type == T_LBRCKT){
 			parserSyntaxStackPush(&(*S), N_BODY, internalError);
@@ -171,17 +180,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 	}
 
 	else if(S->a[S->last] == N_BODY_ID){
-		if((*token)->type == T_ID ||
-		(*token)->type == T_NIL ||
-		(*token)->type == T_INTEGER ||
-		(*token)->type == T_STRING ||
-		(*token)->type == T_FLOAT ||
-		(*token)->type == T_LBRCKT){
-			parserSyntaxStackPop(&(*S), internalError);
-			parserSyntaxStackPush(&(*S), N_FUNC, internalError);
-		}
-
-		else if((*token)->type == T_ADD ||
+		if((*token)->type == T_ADD ||
 		(*token)->type == T_SUB ||
 		(*token)->type == T_MUL ||
 		(*token)->type == T_DIV ||
@@ -199,6 +198,18 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPop(&(*S), internalError);
 			parserSyntaxStackPush(&(*S), N_DEFVAR, internalError);
 			parserSyntaxStackPush(&(*S), T_ASSIGN, internalError);
+		}
+
+		else if((*token)->type == T_ID ||
+		(*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_TRUE ||
+		(*token)->type == T_FALSE ||
+		(*token)->type == T_LBRCKT){
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_FUNC, internalError);
 		}
 
 		else if((*token)->type == T_EOL){
@@ -219,14 +230,44 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 			parserSyntaxStackPush(&(*S), T_INTEGER, internalError);	
 		}
 
+		else if((*token)->type == T_FLOAT){
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_FLOAT, internalError);	
+		}
+
 		else if((*token)->type == T_STRING){
 			parserSyntaxStackPop(&(*S), internalError);
 			parserSyntaxStackPush(&(*S), T_STRING, internalError);	
 		}
 
-		else if((*token)->type == T_FLOAT){
+		else if((*token)->type == T_TRUE){
 			parserSyntaxStackPop(&(*S), internalError);
-			parserSyntaxStackPush(&(*S), T_FLOAT, internalError);	
+			parserSyntaxStackPush(&(*S), T_TRUE, internalError);	
+		}
+
+		else if((*token)->type == T_FALSE){
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_FALSE, internalError);	
+		}
+
+		else if(!*error) *error = 2;
+	}
+
+	else if(S->a[S->last] == N_TYPE_ID){
+
+		if((*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_TRUE ||
+		(*token)->type == T_FALSE){
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_TYPE, internalError);
+		}
+
+		else if((*token)->type == T_ID){
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), T_ID, internalError);
 		}
 
 		else if(!*error) *error = 2;
@@ -250,36 +291,40 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 
 	else if(S->a[S->last] == N_FUNC){
 		parserSyntaxStackPop(&(*S), internalError);
-
-		if((*token)->type == T_ID ||
-		(*token)->type == T_NIL ||
-		(*token)->type == T_INTEGER ||
-		(*token)->type == T_STRING ||
-		(*token)->type == T_FLOAT){
-			parserSyntaxStackPush(&(*S), N_PARS, internalError);
-		}
 		
-		else if ((*token)->type == T_LBRCKT){
+		if ((*token)->type == T_LBRCKT){
 			parserSyntaxStackPush(&(*S), T_RBRCKT, internalError);
 			parserSyntaxStackPush(&(*S), N_PARS, internalError);
 			parserSyntaxStackPush(&(*S), T_LBRCKT, internalError);
+		}
+
+		else if((*token)->type == T_ID ||
+		(*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_TRUE ||
+		(*token)->type == T_FALSE){
+			parserSyntaxStackPush(&(*S), N_PARS, internalError);
 		}
 	}
 
 	else if(S->a[S->last] == N_PARS){
 		parserSyntaxStackPop(&(*S), internalError);
 
-		if((*token)->type == T_ID){
-			parserSyntaxStackPush(&(*S), N_PARSN, internalError);
-			parserSyntaxStackPush(&(*S), T_ID, internalError);
-		}
-
-		else if((*token)->type == T_NIL ||
+		if((*token)->type == T_NIL ||
 		(*token)->type == T_INTEGER ||
+		(*token)->type == T_FLOAT ||
 		(*token)->type == T_STRING ||
-		(*token)->type == T_FLOAT){
+		(*token)->type == T_TRUE ||
+		(*token)->type == T_FALSE){
 			parserSyntaxStackPush(&(*S), N_PARSN, internalError);
 			parserSyntaxStackPush(&(*S), N_TYPE, internalError);
+		}
+
+		else if((*token)->type == T_ID){
+			parserSyntaxStackPush(&(*S), N_PARSN, internalError);
+			parserSyntaxStackPush(&(*S), T_ID, internalError);
 		}
 	}
 
@@ -287,7 +332,8 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 		parserSyntaxStackPop(&(*S), internalError);
 
 		if((*token)->type == T_COMMA){
-			parserSyntaxStackPush(&(*S), N_PARS, internalError);
+			parserSyntaxStackPush(&(*S), N_PARSN, internalError);
+			parserSyntaxStackPush(&(*S), N_TYPE_ID, internalError);
 			parserSyntaxStackPush(&(*S), T_COMMA, internalError);
 		}
 	}
@@ -324,38 +370,33 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 	}
 
 	else if(S->a[S->last] == N_DEFVAR){
-		if((*token)->type == T_ID){
-			parserSyntaxStackPop(&(*S), internalError);
-			parserSyntaxStackPush(&(*S), N_DEFVARID, internalError);
-			parserSyntaxStackPush(&(*S), T_ID, internalError);
-		}
-
-		else if((*token)->type == T_NIL ||
+		if((*token)->type == T_NIL ||
 		(*token)->type == T_INTEGER ||
 		(*token)->type == T_FLOAT ||
 		(*token)->type == T_STRING ||
+		(*token)->type == T_TRUE ||
+		(*token)->type == T_FALSE ||
+		(*token)->type == T_ADD ||
+		(*token)->type == T_SUB ||
 		(*token)->type == T_NOT ||
 		(*token)->type == T_LBRCKT){
 			parserSyntaxStackPop(&(*S), internalError);
 			parserSyntaxStackPush(&(*S), N_EXPR, internalError);
 		}
 
+		else if((*token)->type == T_ID){
+			parserSyntaxStackPop(&(*S), internalError);
+			parserSyntaxStackPush(&(*S), N_DEFVARID, internalError);
+			parserSyntaxStackPush(&(*S), T_ID, internalError);
+		}
+
+
 		else if(!*error) *error = 2;
 	}
 
 	else if(S->a[S->last] == N_DEFVARID){
 		parserSyntaxStackPop(&(*S), internalError);
-
-		if((*token)->type == T_LBRCKT ||
-		(*token)->type == T_ID ||
-		(*token)->type == T_NIL ||
-		(*token)->type == T_INTEGER ||
-		(*token)->type == T_FLOAT ||
-		(*token)->type == T_STRING){
-			parserSyntaxStackPush(&(*S), N_FUNC, internalError);
-		}
-
-		else if((*token)->type == T_ADD ||
+		if((*token)->type == T_ADD ||
 		(*token)->type == T_SUB ||
 		(*token)->type == T_DIV ||
 		(*token)->type == T_MUL ||
@@ -367,6 +408,18 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 		(*token)->type == T_GTE){
 			parserSyntaxStackPush(&(*S), N_EXPR_O, internalError);
 		}
+
+		else if((*token)->type == T_LBRCKT ||
+		(*token)->type == T_ID ||
+		(*token)->type == T_NIL ||
+		(*token)->type == T_INTEGER ||
+		(*token)->type == T_FLOAT ||
+		(*token)->type == T_STRING ||
+		(*token)->type == T_TRUE ||
+		(*token)->type == T_FALSE){
+			parserSyntaxStackPush(&(*S), N_FUNC, internalError);
+		}
+
 	} 
 
 	else if(S->a[S->last] == N_EXPR_O){
@@ -537,8 +590,9 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, pSemanticsStack sem
 						data->params++;
 					}
 
-					else if(param->type == T_STRING || param->type == T_FLOAT || param->type == T_INTEGER || param->type == T_NIL){
-						*error = 42;
+					else if(param->type == T_STRING || param->type == T_FLOAT || param->type == T_INTEGER || param->type == T_NIL || param->type == T_TRUE || param->type == T_FALSE){
+						if (!*error) *error = 42;
+						break;
 					}
 
 					else break;
@@ -563,6 +617,9 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 		*func = token->nextToken;	// Identifikátor funkce po DEF
 	}
 
+
+
+
 	/*******************************Definice proměnné*****************************************************/
 
 	if(token->type == T_ID && token->nextToken->type == T_ASSIGN){	// Je-li to definice proměnné
@@ -580,6 +637,9 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 			symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0));
 		}
 	}
+
+
+
 
 	/*******************************Volání funkce**********************************************************/
 
@@ -621,6 +681,9 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 			parserSemanticStackPush(semanticError, 4, token->data, internalError, token->linePos, token->colPos);
 		}
 	}
+
+
+	
 
 	/*******************************Proměnná v expressionu**************************************************/
 
@@ -693,7 +756,7 @@ int parserSemanticError(pSemanticsStack semanticError){
 
 	for(int i = 0; i < semanticError->top; i++){
 		if(semanticError->ErrorArray[i].error == 1){
-			fprintf(stderr, "[SEMANTICS] Error: Attempted to redefine function %s!\n", semanticError->ErrorArray[i].name);
+			fprintf(stderr, "[SEMANTIC] Error: Attempted to redefine function %s!\n", semanticError->ErrorArray[i].name);
 			if(!error) error = 3;
 		}
 
