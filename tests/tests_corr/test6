@@ -1,0 +1,8 @@
+varFloat = 5.6
+varInt = 4
+
+varInt = varFloat + 5 / varInt * 5 / "ahoj"
+
+print varInt + varFloat
+print "\n"
+print varInt

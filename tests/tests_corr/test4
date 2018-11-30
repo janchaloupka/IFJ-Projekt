@@ -1,0 +1,9 @@
+def foo (s1, s2)
+  print s1
+  print s2
+end
+
+string12 = "Ceska klavesnice:"
+string2 = "QWERTZ"
+
+foo string1, string2
