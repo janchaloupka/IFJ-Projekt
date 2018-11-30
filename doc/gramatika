@@ -2,6 +2,8 @@
 <expr>      -> <type>
 <expr>      -> ( <expr_id> )
 <expr>      -> not <expr_id>
+<expr>      -> + <expr_id>
+<expr>      -> - <expr_id>
 <expr>      -> <expr> <expr_o>
 <expr_id>   -> id <expr_o>
 <expr_id>   -> <expr>

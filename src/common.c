@@ -1,5 +1,23 @@
 #include "common.h"
 
+void *safeMalloc(size_t _Size){
+	void *ret = malloc(_Size);
+	if(ret == NULL){
+		fprintf(stderr, "[INTERNAL] Fatal error - cannot allocate memory\n");
+		exit(99);
+	}
+	return ret;
+}
+
+void *safeRealloc(void *_Block, size_t _Size){
+	void *ret = realloc(_Block, _Size);
+	if(ret == NULL){
+		fprintf(stderr, "[INTERNAL] Fatal error - cannot allocate memory\n");
+		exit(99);
+	}
+	return ret;
+}
+
 char *stringToInterpret(char *rawString){
 	int rawLen = strlen(rawString);
 	
@@ -121,13 +139,9 @@ char *funcToInterpret(char *id){
 void generateBaseCode(){
 	printf(".IFJcode18\n\
 \n\
-DEFVAR GF@$_line\n\
-DEFVAR GF@$_col\n\
 DEFVAR GF@$tmp\n\
 DEFVAR GF@$tmp2\n\
 \n\
-MOVE GF@$_line string@TBD\n\
-MOVE GF@$_col string@TBD\n\
 JUMP $main\n\
 \n\
 LABEL $checkIfBool\n\
@@ -226,11 +240,7 @@ LABEL $getType\n\
 	RETURN\n\
 \n\
 LABEL $printTypeError\n\
-	WRITE string@\\010[RUNTIME]\\032Error\\032on\\032line\\032\n\
-	WRITE GF@$_line\n\
-	WRITE string@:\n\
-	WRITE GF@$_col\n\
-	WRITE string@\\032-\\032Type\\032error;\\032incompatible\\032types\\032(\n\
+	WRITE string@\\010[RUNTIME]\\032Type\\032error\\032-\\032incompatible\\032types\\032(\n\
 	WRITE TF@lt\n\
 	WRITE string@\\032with\\032\n\
 	WRITE TF@rt\n\
