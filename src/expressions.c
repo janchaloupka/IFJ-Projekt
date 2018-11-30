@@ -91,6 +91,7 @@ eRelation exprGetRelation(eRelTerm currTerm, eRelTerm newTerm){
 }
 
 int exprParse(pToken *token, psTree idTable){
+	printf("CLEARS\n");
 	peStack stack;
 	exprStackInit(&stack);
 
@@ -108,7 +109,7 @@ int exprParse(pToken *token, psTree idTable){
 		switch(exprGetRelation(stackT, newT)){
 			case E_OPEN:
 				exprStackInsertOpen(stack, termPos + 1);
-				item = malloc(sizeof(struct eItem));
+				item = safeMalloc(sizeof(struct eItem));
 				item->type = IT_TERM;
 				item->val.term = *token;
 
@@ -125,7 +126,7 @@ int exprParse(pToken *token, psTree idTable){
 				}
 				break;
 			case E_EQUAL:
-				item = malloc(sizeof(struct eItem));
+				item = safeMalloc(sizeof(struct eItem));
 				item->type = IT_TERM;
 				item->val.term = *token;
 
@@ -145,26 +146,28 @@ int exprParse(pToken *token, psTree idTable){
 					fprintf(stderr, "[SYNTAX] Error on line %d:%d - ", (*token)->linePos, (*token)->colPos);
 					
 					if(termPos < 0)
-						fprintf(stderr, "Expression cannot start with %s\n", scannerTypeToString((*token)->type));
+						if((*token)->type == T_RBRCKT)
+							fprintf(stderr, "Found extra right bracket in expression\n");
+						else
+							fprintf(stderr, "Expression cannot start with %s\n", scannerTypeToString((*token)->type));
 					else 
 						fprintf(stderr, "%s in expression cannot be followed with %s\n",
 							scannerTypeToString(stack->s[termPos]->val.term->type),
-							scannerTypeToString((*token)->type)
-						);
+							scannerTypeToString((*token)->type));
 					retCode = 2;
 				}
 		}
 	}
-
+	
 	exprStackDispose(&stack);
 	return retCode;
 }
 
 void exprStackInit(peStack *stack){
 	if(stack == NULL) return;
-	*stack = malloc(sizeof(struct eStack));
+	*stack = safeMalloc(sizeof(struct eStack));
 	(*stack)->size = EXPR_STACK_CHUNK_SIZE;
-	(*stack)->s = malloc(sizeof(peItem) * EXPR_STACK_CHUNK_SIZE);
+	(*stack)->s = safeMalloc(sizeof(peItem) * EXPR_STACK_CHUNK_SIZE);
 	(*stack)->top = -1;
 }
 
@@ -185,7 +188,7 @@ void exprStackPush(peStack stack, peItem item){
 	
 	if(stack->top >= stack->size){
 		stack->size += EXPR_STACK_CHUNK_SIZE;
-		stack->s = realloc(stack->s, sizeof(peItem) * stack->size);
+		stack->s = safeRealloc(stack->s, sizeof(peItem) * stack->size);
 	}
 
 	stack->s[stack->top] = item;
@@ -212,20 +215,20 @@ void exprStackInsertOpen(peStack stack, int pos){
 		stack->s[i + 1] = stack->s[i];
 	}
 
-	peItem item = malloc(sizeof(struct eItem));
+	peItem item = safeMalloc(sizeof(struct eItem));
 	item->type = IT_OPEN;
 	stack->s[pos] = item;
 }
 
 int exprStackParse(peStack stack, psTree idTable){
 	peItem item = exprStackPop(stack);
-	
 	if(item->type == IT_TERM){
 		if(item->val.term->type == T_RBRCKT){
 			// Pravidlo <expr> => ( <expr> )
 			free(item);
 			item = exprStackPop(stack);
-			free(exprStackPop(stack));
+			peItem lb = exprStackPop(stack);
+			free(lb);
 		}else{
 			// Pravidlo <expr> => <val>
 			eTermType ttype = E_UNKNOWN;
@@ -257,12 +260,20 @@ int exprStackParse(peStack stack, psTree idTable){
 					break;
 				case T_ID:
 					if(symTabSearch(&idTable, item->val.term->data) == NULL){
+						// Proměnná není definovaná
 						fprintf(stderr, "[SEMANTIC] Error on line %d:%d - Variable \"%s\" in expression is not defined\n", item->val.term->linePos, item->val.term->colPos, item->val.term->data);
+						free(item);
 						return 3; // Chyba
 					}
 					out = varToInterpret(item->val.term->data);
 					break;
-				default: break;
+				default: 
+					fprintf(stderr, "[SYNTAX] Error on line %d:%d - Exprected operand, found %s\n",
+						item->val.term->linePos,
+						item->val.term->colPos,
+						scannerTypeToString(item->val.term->type));
+					free(item);
+					return 2;
 			}
 			printf("PUSHS %s\n", out);
 			free(out);
@@ -311,13 +322,29 @@ int exprStackParse(peStack stack, psTree idTable){
 
 	switch(item->val.term->type){
 		case T_ADD:
+			if(isSingle){
+				if(type == E_FLOAT) printf("PUSHS float@0x0p+0\n");
+				else printf("PUSHS int@0\n");
+			}
 			if(hasUnknown) printf("CALL $checkIfAdd\n");
-			if(!isSame || (type != E_INT && type != E_FLOAT && type != E_STRING && type != E_UNKNOWN)){
+			if((!isSingle && !isSame) || (type != E_INT && type != E_FLOAT && type != E_STRING && type != E_UNKNOWN)){
 				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
 				return 4; // Error
 			}
 			break;
 		case T_SUB:
+			if(isSingle){
+				printf("POPS GF@$tmp\n");
+				if(type == E_FLOAT) printf("PUSHS float@0x0p+0\n");
+				else printf("PUSHS int@0\n");
+				printf("PUSHS GF@$tmp\n");
+			}
+			if(hasUnknown) printf("CALL $checkIfNum\n");
+			if((!isSingle && !isSame) || (type != E_INT && type != E_FLOAT && type != E_UNKNOWN)){
+				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
+				return 4; // Error
+			}
+			break;
 		case T_MUL:
 			if(hasUnknown) printf("CALL $checkIfNum\n");
 			if(!isSame || (type != E_INT && type != E_FLOAT && type != E_UNKNOWN)){

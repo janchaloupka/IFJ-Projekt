@@ -3,8 +3,12 @@
  * 
  * Knihovna pro obecné věci
  * 
- * @version 0.1
- * @date 2018-11-25
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
  */
 
 #pragma once
@@ -14,6 +18,8 @@
 #include <ctype.h>
 #include "scanner.h"
 
+void *safeMalloc(size_t _Size);
+void *safeRealloc(void *_Block, size_t _Size);
 
 char *stringToInterpret(char *rawString);
 

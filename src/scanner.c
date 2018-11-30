@@ -82,7 +82,9 @@ int _scannerFSM(FILE *file, pToken token){
 		
 		switch(state){
 			case STATE_START:
-				if(currChar == '!') nextState = STATE_NEQ;
+				if(currChar == '!') nextState = STATE_NOT;
+				else if(currChar == '&') nextState = STATE_AND;
+				else if(currChar == '|') nextState = STATE_OR;
 				else if(currChar == '>') nextState = STATE_GT;
 				else if(currChar == '<') nextState = STATE_LT;
 				else if(currChar == '=') nextState = STATE_ASSIGN;
@@ -154,11 +156,25 @@ int _scannerFSM(FILE *file, pToken token){
 			case STATE_EQL:
 				token->type = T_EQL;
 				break;
-			case STATE_NEQ:
-				if(currChar == '=') nextState = STATE_NEQ2;
+			case STATE_NOT:
+				if(currChar == '=') nextState = STATE_NEQ;
+				else token->type = T_NOT;
+				break;
+			case STATE_AND:
+				if(currChar == '&') nextState = STATE_AND2;
 				else nextState = STATE_ERROR;
 				break;
-			case STATE_NEQ2:
+			case STATE_AND2:
+				token->type = T_AND;
+				break;
+			case STATE_OR:
+				if(currChar == '|') nextState = STATE_OR2;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_OR2:
+				token->type = T_OR;
+				break;
+			case STATE_NEQ:
 				token->type = T_NEQ;
 				break;
 			case STATE_ASSIGN:
@@ -200,8 +216,33 @@ int _scannerFSM(FILE *file, pToken token){
 			case STATE_INT0:
 				if(tolower(currChar) == 'e') nextState = STATE_EXP;
 				else if(currChar == '.') nextState = STATE_DBLE;
+				else if(currChar == 'b') nextState = STATE_BIN;
+				else if(currChar == 'x') nextState = STATE_HEX;				
+				else if(currChar >= '0' && currChar <= '7') nextState = STATE_OCT;
 				else if(!isdigit(currChar)) token->type = T_INTEGER;
 				else nextState = STATE_ERROR;
+				break;
+			case STATE_OCT:
+				if(currChar >= '0' && currChar <= '7') nextState = STATE_OCT;
+				else if(!isdigit(currChar)) token->type = T_INTEGER;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_BIN:
+				if(currChar == '0' || currChar == '1') nextState = STATE_BIN2;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_BIN2:
+				if(currChar == '0' || currChar == '1') nextState = STATE_BIN2;
+				else if(!isdigit(currChar)) token->type = T_INTEGER;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_HEX:
+				if(isxdigit(currChar)) nextState = STATE_HEX2;
+				else nextState = STATE_ERROR;
+				break;
+			case STATE_HEX2:
+				if(isxdigit(currChar)) nextState = STATE_HEX2;
+				else token->type = T_INTEGER;
 				break;
 			case STATE_INT:
 				if(isdigit(currChar)) nextState = STATE_INT;
@@ -323,6 +364,9 @@ int _scannerFSM(FILE *file, pToken token){
 		case STATE_STR4:
 		case STATE_INT:
 		case STATE_INT0:
+		case STATE_OCT:
+		case STATE_BIN2:
+		case STATE_HEX2:
 		case STATE_DBLE2:
 		case STATE_EXP3:
 		case STATE_ID:
@@ -413,7 +457,17 @@ void _scannerHandleError(sState state, char currChar, unsigned int line, unsigne
 			fprintf(stderr, "Expected a-f or digit after 'x', found ");
 			break;
 		case STATE_INT0:
-			fprintf(stderr, "Integer cannot start with '0', found digit ");
+		case STATE_OCT:
+			fprintf(stderr, "Integer in octal base must be represented with numbers 0-7, found digit ");
+			break;
+		case STATE_BIN:
+			fprintf(stderr, "Exprected binary number after '0b' found ");
+			break;
+		case STATE_BIN2:
+			fprintf(stderr, "Integer in binary must be represented with 0 or 1, found digit ");
+			break;
+		case STATE_HEX:
+			fprintf(stderr, "Exprected hexadecimal number after '0x', found ");
 			break;
 		case STATE_DBLE:
 			fprintf(stderr, "Expected digit after decimal point, found ");
@@ -424,8 +478,11 @@ void _scannerHandleError(sState state, char currChar, unsigned int line, unsigne
 		case STATE_EXP2:
 			fprintf(stderr, "Expected digit after +,- sign in exponent, found ");
 			break;
-		case STATE_NEQ:
-			fprintf(stderr, "Expected '=' after '!', found ");
+		case STATE_AND:
+			fprintf(stderr, "Expected '&' after '&', found ");
+			break;
+		case STATE_OR:
+			fprintf(stderr, "Expected '|' after '|', found ");
 			break;
 		case STATE_BCMT7:
 		case STATE_BCMT8:
