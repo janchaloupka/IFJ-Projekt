@@ -2,15 +2,17 @@
 
 void codeFromToken(tType type, pToken token, psTree table){
 	
-	char *ifWhile; 
+	static char *ifWhile; 
 	static int ifCounter = 0;
 	static int whileCounter = 0;
 	static bool defFunc = false;
 	static bool alloc = false;
+	static char *varId;
+	static int endIndex = 0;
 	//static char *id;
 
 	if(!alloc){ //pokud ještě neproběhla alokace pro ifWhile
-		ifWhile = malloc(STRING_CHUNK_SIZE * sizeof(char));
+		ifWhile = malloc(STRING_CHUNK_SIZE * sizeof(char)); //zatím tomu chybí free
 		alloc = true;
 	}
 
@@ -20,8 +22,8 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 	switch(type){
 		char *result; //výsledek expressionu
-		case N_DEFVAR: //TODO
-			printf("DEFVAR\n");
+		case N_DEFVAR: //TODO: teď to vypíše DEFVAR u každé proměnné, kterou potká
+			printf("DEFVAR %s\n", varId);
 			break;
 
 
@@ -36,12 +38,15 @@ void codeFromToken(tType type, pToken token, psTree table){
 				printf("PUSHFRAME\n");
 				defFunc = false;	
 			}
+			else{
+				varId = token->data;
+			}
 			break;
 
 		case T_THEN:
 			result = "expr"; //výsledek expressionu 
 
-			ifWhile[strlen(ifWhile)] = 'i';
+			ifWhile[strlen(ifWhile) - endIndex] = 'i';
 			ifCounter++; //kolikátej je to if
 			printf("JUMPIFNEQ else$%i %s bool@true\n", ifCounter, result);
 			break;
@@ -53,8 +58,6 @@ void codeFromToken(tType type, pToken token, psTree table){
 			break;
 		
 		case T_END:
-			printf("%s\n", ifWhile);
-			int endIndex; //jak daleko od konce je písmeno
 			for(endIndex = 1; ifWhile[strlen(ifWhile) - endIndex] == '0'; endIndex++); //projde nuly na konci ifWhile 
 			
 			if(ifWhile[strlen(ifWhile) - endIndex] == 'i'){ //je to if
@@ -69,7 +72,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 			break;
 
 		case N_WHILE:
-			ifWhile[strlen(ifWhile)] = 'w';
+			ifWhile[strlen(ifWhile) - endIndex] = 'w';
 			whileCounter++; //kolikátej je to while
 			printf("LABEL while$%i\n", whileCounter);
 			break;
@@ -77,6 +80,13 @@ void codeFromToken(tType type, pToken token, psTree table){
 		case T_DO:
 			result = "expr";//výsledek expressionu
 			printf("JUMPIFNEQ end$while$%i %s bool@true\n", whileCounter, result);
+			break;
+
+		case T_EOF:
+			if(alloc){
+				free(ifWhile);
+				alloc = false;
+			}
 			break;
 		default: break;
 	}
