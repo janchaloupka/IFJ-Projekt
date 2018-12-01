@@ -2,23 +2,35 @@
 
 void codeFromToken(tType type, pToken token, psTree table){
 	
-	static int ifWhile; // 1 = if, 2 = while
+	char *ifWhile; 
 	static int ifCounter = 0;
 	static int whileCounter = 0;
 	static bool defFunc = false;
+	static bool alloc = false;
+	//static char *id;
+
+	if(!alloc){ //pokud ještě neproběhla alokace pro ifWhile
+		ifWhile = malloc(STRING_CHUNK_SIZE * sizeof(char));
+		alloc = true;
+	}
+
+	if((strlen(ifWhile) - 1) == 100){ //pokud je ifWhile plný
+		ifWhile = realloc(ifWhile, STRING_CHUNK_SIZE);
+	}
 
 	switch(type){
 		char *result; //výsledek expressionu
-		
-		case N_DEFVAR:
+		case N_DEFVAR: //TODO
+			printf("DEFVAR\n");
 			break;
+
 
 		case N_DEFUNC:
 			defFunc = true;
 			break;
 
 		case T_ID:
-			if(defFunc == true){ //je to id funkce
+			if(defFunc == true){ //je to id u definice funkce
 				char *funcId = token->data;
 				printf("LABEL %s\n", funcId);
 				printf("PUSHFRAME\n");
@@ -27,29 +39,37 @@ void codeFromToken(tType type, pToken token, psTree table){
 			break;
 
 		case T_THEN:
-			result = "expr"; //výsledek expressionu
-			ifCounter++; //kolikátej je to if 
-			ifWhile = 1; //=> je to if
+			result = "expr"; //výsledek expressionu 
+
+			ifWhile[strlen(ifWhile)] = 'i';
+			ifCounter++; //kolikátej je to if
 			printf("JUMPIFNEQ else$%i %s bool@true\n", ifCounter, result);
 			break;
 
 		case T_ELSE:
 			result = "expr"; //výsledek expressionu
 			printf("JUMP end$if$%i\n", ifCounter);
-			printf("LABEL else$%i %s bool@true\n", ifCounter, result);
+			printf("LABEL else$%i\n", ifCounter);
 			break;
 		
 		case T_END:
-			if(ifWhile == 1) //end v těle ifu
+			printf("%s\n", ifWhile);
+			int endIndex; //jak daleko od konce je písmeno
+			for(endIndex = 1; ifWhile[strlen(ifWhile) - endIndex] == '0'; endIndex++); //projde nuly na konci ifWhile 
+			
+			if(ifWhile[strlen(ifWhile) - endIndex] == 'i'){ //je to if
+				ifWhile[strlen(ifWhile) - endIndex] = '0';
 				printf("LABEL end$if$%i\n", ifCounter);
-			else{ //end v těle whilu
+			}
+			else{ //je to while
+				ifWhile[strlen(ifWhile) - endIndex] = '0';
 				printf("JUMP while$%i\n", whileCounter);
 				printf("LABEL end$while$%i\n", whileCounter);
 			}
 			break;
 
 		case N_WHILE:
-			ifWhile = 2; //je to while
+			ifWhile[strlen(ifWhile)] = 'w';
 			whileCounter++; //kolikátej je to while
 			printf("LABEL while$%i\n", whileCounter);
 			break;
