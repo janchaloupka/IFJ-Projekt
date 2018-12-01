@@ -25,7 +25,6 @@ int parser(pToken *List){
 	parserSyntaxStackInit(&S, &internalError);
 	parserSemanticStackInit(&semanticError, &internalError);
 
-	bool tokenChecked = false;
 	bool inFunc = false;	// Je-li true, jsme ve funkci
 	int inAux = 0;			// Semafor? Za každý if/while ++, za každý END --
 
@@ -50,14 +49,10 @@ int parser(pToken *List){
 			parserSyntaxStackPop(&S, &internalError);
 			parserSyntaxIDFNCheck(token, &funcTable, &error);	// Kontrola ? a ! na konci proměnných
 
-			if(!tokenChecked){
-				parserSemanticsInFunc(&inFunc, &inAux, token);	// Jsme-li ve funkci - tj. mezi DEF a příslušným END
-				parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, semanticError, inFunc, &internalError); // Víceméně jen check IDček
-				tokenChecked = true;
-			}
+			parserSemanticsInFunc(&inFunc, &inAux, token);	// Jsme-li ve funkci - tj. mezi DEF a příslušným END
+			parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, semanticError, inFunc, &internalError); // Víceméně jen check IDček
 
 			token = token->nextToken;
-			tokenChecked = false;	// Nový token pro sémantickou analýzu
 		}
 
 		// Volání Klářino generování kódu
@@ -717,7 +712,7 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 			else{
 				psData data = symTabSearch(localTable, token->data);
 				
-				if((data == NULL) && (symTabSearch(funcTable, token->data) == NULL || symTabSearch(funcTable, token->data)->type != FUNC)){
+				if((data == NULL)){
 					parserSemanticStackPush(semanticError, 7, token->data, internalError, token->linePos, token->colPos);
 				}
 			}
