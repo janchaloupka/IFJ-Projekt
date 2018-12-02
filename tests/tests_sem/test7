@@ -3,4 +3,5 @@ x = 567
 
 len = length(string)
 print (len)
-#print (length(x))
+len = length(x)
+print (x)

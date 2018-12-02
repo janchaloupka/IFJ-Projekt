@@ -2,5 +2,5 @@ a = 56
 b = "Ahoj"
 
 c = a * b
-var = chr(c)
+var = chr(ahoj)
 print var
