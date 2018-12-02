@@ -20,18 +20,26 @@ int parser(pToken *List){
 	parserSemanticsInitBuiltIn(&funcTable);	// Naplnění tabulky built-in funkcema
 
 	SyntaxStack S;							// Stack pro rekurzivní sestup
-	pSemanticsStack semanticError;			// Stack sémantických chyb
 
 	parserSyntaxStackInit(&S, &internalError);
-	parserSemanticStackInit(&semanticError, &internalError);
 
 	bool inFunc = false;	// Je-li true, jsme ve funkci
 	int inAux = 0;			// Semafor? Za každý if/while ++, za každý END --
 
 	while(preRun != NULL){	// Sémantický pre-run, naplnění tabulky definicemi funkcí
-		parserSemanticsPreRun(&preRun, &funcTable, semanticError, &internalError, &error);	// Naplnění tabulky definicí funkcí
-		parserSyntaxError(error, internalError, NULL, &S);	// Pouze pro výpis erroru 42
-		if(error) return error;
+		parserSemanticsPreRun(&preRun, &funcTable, &error);	// Naplnění tabulky definicí funkcí
+		error = parserError(error, internalError, &preRun);
+
+		if(error){
+
+			// Úklid
+
+			symTabDispose(&varTable);
+			symTabDispose(&funcTable);
+			parserSyntaxStackDelete(&S);
+			return error;
+		}
+
 		preRun = preRun->nextToken;
 	}
 
@@ -50,36 +58,126 @@ int parser(pToken *List){
 			parserSyntaxIDFNCheck(token, &funcTable, &error);	// Kontrola ? a ! na konci proměnných
 
 			parserSemanticsInFunc(&inFunc, &inAux, token);	// Jsme-li ve funkci - tj. mezi DEF a příslušným END
-			parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, semanticError, inFunc, &internalError); // Víceméně jen check IDček
+			parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, &error, inFunc); // Sémantická analýza
 
 			token = token->nextToken;
 		}
 
-		// Volání Klářino generování kódu
-		codeFromToken(S.a[S.last], token, localTable);
+		// Volání Klarušina generování kódu
+		//codeFromToken(S.a[S.last], token, localTable);
 
-		error = parserSyntaxError(error, internalError, &prevToken, &S);
+		error = parserError(error, internalError, &prevToken);
+
 		if(error){
 			
 			// Úklid
 
 			symTabDispose(&varTable);
 			symTabDispose(&funcTable);
-			parserSemanticStackDelete(&semanticError);
 			parserSyntaxStackDelete(&S);
 			return error;
 		} 
 	}
 
-	error = parserSemanticError(semanticError);	// Došli jsme až sem, syntax je tedy správně, pokud jsou sémantické chyby, měly by i dávat smysl
-
 	// Úklid
 
 	symTabDispose(&varTable);
 	symTabDispose(&funcTable);
-	parserSemanticStackDelete(&semanticError);
 	parserSyntaxStackDelete(&S);
 	return error;
+}
+
+int parserError(int error, int internalError, pToken *prevToken){
+	if(internalError == 1){
+		fprintf(stderr, "[INTERNAL ERROR]: Unexpected token on stack!\n");
+		return 99;
+	}
+
+	else if(internalError == 2){
+		fprintf(stderr, "[INTERNAL ERROR]: Failed malloc!\n");
+		return 99;
+	} 
+
+	else if(internalError != 0 && internalError != 1 && internalError != 2){
+		fprintf(stderr, "[INTERNAL ERROR]: Something went terribly wrong!\n");
+		return 99;
+	}
+
+	if(error){
+			if(error == 2){	// Syntax
+				fprintf(stderr, "[SYNTAX] Error on line %u!\n", (*prevToken)->linePos);
+				return 2;
+			}
+
+			else if(error == 11){	// Sémantika
+				fprintf(stderr, "[SEMANTIC] Error: Attempted to redefine function on line %u!\n", (*prevToken)->linePos);
+				return 3;
+			}
+
+			else if(error == 12){	// Sémantika
+				fprintf(stderr, "[SEMANTIC] Error: Variables and functions must have different IDs on line %u!\n", (*prevToken)->linePos);
+				return 3;
+			}
+
+			else if(error == 13){	// Sémantika
+				fprintf(stderr, "[SEMANTIC] Error: Can't name a variable same as a previously defined function on line %u!\n", (*prevToken)->linePos);
+				return 3;
+			}
+
+			else if(error == 14){	// Sémantika
+				fprintf(stderr, "[SEMANTIC] Error: Calling an undefined function on line %u!\n", (*prevToken)->linePos);
+				return 3;
+			}
+
+			else if(error == 15){	// Sémantika
+				fprintf(stderr, "[SEMANTIC] Error: Function can't have another function as an argument on line %u!\n", (*prevToken)->linePos);
+				return 6;
+			}
+
+			else if(error == 16){	// Sémantika
+				fprintf(stderr, "[SEMANTIC] Error: Wrong number of arguments in a function on line %u!\n", (*prevToken)->linePos);
+				return 5;
+			}
+
+			else if(error == 17){	// Sémantika
+				fprintf(stderr, "[SEMANTIC] Error: Undefined variable on line %u!\n", (*prevToken)->linePos);
+				return 3;
+			}
+
+			else if(error == 18){	// Sémantika
+				fprintf(stderr, "[SEMANTIC] Error: Can't have arguments of the same name in a function on line %u!\n", (*prevToken)->linePos);
+				return 6;
+			}
+
+			else if(error == 200){	//Error expressionu
+				return 2;
+			}
+
+			else if(error == 300){	//Error expressionu
+				return 3;
+			}
+
+			else if(error == 400){	//Error expressionu
+				return 4;
+			}
+
+			else if(error == 69){	// Syntax
+				fprintf(stderr, "[SYNTAX] Error: Only function names can end with \"!\" and \"?\" symbols!\n");
+				return 2;
+			}
+
+			else if(error == 42){	// Syntax
+				fprintf(stderr, "[SYNTAX] Error: Only variables can be used when defining parameters of a function!\n");
+				return 2;
+			}
+
+			else{	// Nedefinovanej stav, nemělo by nikdy nastat
+				fprintf(stderr, "[INTERNAL ERROR]: Unexplainable unbelievable problem!\n");
+				return 99;
+			}
+		}
+
+	return 0;
 }
 
 
@@ -419,8 +517,9 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 
 	else if(S->a[S->last] == N_EXPR_O){
 		*token = (*token)->prevToken;
-		if(exprParse(&(*token), localTable)) 
-			*error = 32;
+		*error = exprParse(&(*token), localTable);
+		if(error) 
+			*error = *error * 100;	// Pokud nula, stále nula, jinak 200, 300, 400
 
 		if((*token)->type == T_EOL ||
 		(*token)->type == T_EOF){
@@ -431,8 +530,9 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 	}
 
 	else if(S->a[S->last] == N_EXPR){
-		if (exprParse(&(*token), localTable)) 
-			*error = 32;
+		*error = exprParse(&(*token), localTable);
+		if(error) 
+			*error = *error * 100;	// Pokud nula, stále nula, jinak 200, 300, 400
 
 		if((*token)->type == T_EOL ||
 		(*token)->type == T_THEN ||
@@ -447,47 +547,6 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 	else{
 		if (!*internalError) *internalError = 2;	// Neočekávaný token na stacku
 	}
-}
-
-int parserSyntaxError(int error, int internalError, pToken *prevToken, SyntaxStack *S){
-	if(internalError == 1){
-		fprintf(stderr, "[INTERNAL ERROR]: Unexpected token on stack!\n");
-		return 99;
-	}
-
-	if(internalError == 2){
-		fprintf(stderr, "[INTERNAL ERROR]: Failed malloc!\n");
-		return 99;
-	} 
-
-	if(error){	//Syntax error
-			if(error == 2){
-				fprintf(stderr, "[SYNTAX] Error on line %u:%u - expected %s, got %s\n",
-					(*prevToken)->linePos, (*prevToken)->colPos, scannerTypeToString((*S).a[(*S).top]), scannerTypeToString((*prevToken)->type));
-				return 2;
-			}
-
-			else if(error == 32){	//Syntaktický error expressionu
-				return 2;
-			}
-
-			else if(error == 69){
-				fprintf(stderr, "[SYNTAX] Error: Only function names can end with \"!\" and \"?\" symbols!\n");
-				return 2;
-			}
-
-			else if(error == 42){
-				fprintf(stderr, "[SYNTAX] Error: Only variables can be used when defining parameters of a function!\n");
-				return 2;
-			}
-
-			else{
-				fprintf(stderr, "[INTERNAL ERROR]: Unexplainable unbelievable problem!\n");
-				return 99;
-			}
-		}
-
-	return 0;
 }
 
 void parserSyntaxIDFNCheck(pToken token, psTree *funcTable, int *error){
@@ -562,7 +621,7 @@ void parserSemanticsInitBuiltIn(psTree *funcTable){
 	return;
 }
 
-void parserSemanticsPreRun(pToken *token, psTree *funcTable, pSemanticsStack semanticError, int *internalError, int *error){
+void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error){
 	if((*token)->type == T_ID){
 
 		if((*token)->prevToken != NULL && (*token)->prevToken->type == T_DEF){
@@ -594,16 +653,17 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, pSemanticsStack sem
 				}
 
 				symTabInsert(funcTable, (*token)->data, data);
+				symTabSearch(funcTable, (*token)->data)->localFrame = localTable;
 			}
 
 			else{
-				 parserSemanticStackPush(semanticError, 1, (*token)->data, internalError, (*token)->linePos, (*token)->colPos);
+				if (!*error) *error = 11;
 			}
 		}
 	}
 }
 
-void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree *varTable, psTree *localTable, pSemanticsStack semanticError, bool inFunc, int *internalError){
+void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree *varTable, psTree *localTable, int *error, bool inFunc){
 	
 	/*******************************Local frame***********************************************************/
 
@@ -620,14 +680,14 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 	if(token->type == T_ID && token->nextToken->type == T_ASSIGN){	// Je-li to definice proměnné
 		if(!inFunc){					// A pokud nejsme nikde ve funkci
 			if(symTabSearch(funcTable, token->data)){
-				parserSemanticStackPush(semanticError, 2, token->data, internalError, token->linePos, token->colPos);
+				if (!*error) *error = 12;
 			}
 			symTabInsert(varTable, token->data, parserSemanticsInitData(VAR, NULL, 0));
 		}
 
 		else{							// Pokud jsme ve funkci
 			if(symTabSearch(funcTable, token->data)){
-				parserSemanticStackPush(semanticError, 3, token->data, internalError, token->linePos, token->colPos);
+				if (!*error) *error = 13;
 			}
 			symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0));
 		}
@@ -638,7 +698,12 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 
 	/*******************************Volání funkce**********************************************************/
 
-	else if((token->type == T_ID && symTabSearch(funcTable, token->data)) || (token->type == T_ID && token->prevToken->type != T_DEF && (token->nextToken->type == T_LBRCKT || token->nextToken->type == T_ID || token->nextToken->type == T_FLOAT || token->nextToken->type == T_STRING || token->nextToken->type == T_INTEGER || token->nextToken->type == T_NIL))){
+	else if((token->type == T_ID && symTabSearch(funcTable, token->data)) || 
+	((token->prevToken != NULL && token->nextToken != NULL) &&
+	(token->type == T_ID && token->prevToken->type != T_DEF && (token->nextToken->type == T_LBRCKT || 
+	token->nextToken->type == T_ID || token->nextToken->type == T_FLOAT || token->nextToken->type == T_STRING || 
+	token->nextToken->type == T_INTEGER || token->nextToken->type == T_NIL)))){
+
 		if(symTabSearch(funcTable, token->data)){				// Pokud je definovaná
 			
 			psData func_data = symTabSearch(funcTable, token->data);	// Uložit si data o funkci z tabulky (kvůli počtu parametrů)
@@ -652,7 +717,8 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 			while(param->type != T_EOL && param->type != T_RBRCKT){			// Spočítáme parametry
 
 				if(param->data != NULL && (symTabSearch(funcTable, param->data))){	// Pokud je token ID (čárka třeba nemá data) a existuje v tabulce funkcí
-					parserSemanticStackPush(semanticError, 5, token->data, internalError, token->linePos, token->colPos);
+					if (!*error) *error = 15;
+					break;
 				}
 
 				if(param->type == T_COMMA){
@@ -668,12 +734,12 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 			if(func_data->params == -1 && params >= 1){}	// Print může mít argumentů, kolik chce, pokud je to alespoň jeden
 
 			else if(params != func_data->params){
-				parserSemanticStackPush(semanticError, 6, token->data, internalError, token->linePos, token->colPos);
+				if (!*error) *error = 16;
 			}
 		}
 
 		else{
-			parserSemanticStackPush(semanticError, 4, token->data, internalError, token->linePos, token->colPos);
+			if (!*error) *error = 14;
 		}
 	}
 
@@ -688,7 +754,7 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 			psData data = symTabSearch(varTable, token->data);
 
 			if(data == NULL){
-				parserSemanticStackPush(semanticError, 7, token->data, internalError, token->linePos, token->colPos);
+				if (!*error) *error = 17;
 			}
 		}
 
@@ -702,7 +768,7 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 					if(aux->type == T_COMMA) aux = aux->prevToken;
 					else{
 						if(!strcmp(token->data, aux->data)) 
-							parserSemanticStackPush(semanticError, 8, (*func)->data, internalError, (*func)->linePos, aux->colPos);
+							if (!*error) *error = 18;
 
 						aux = aux->prevToken;
 					}
@@ -712,8 +778,8 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 			else{
 				psData data = symTabSearch(localTable, token->data);
 				
-				if((data == NULL)){
-					parserSemanticStackPush(semanticError, 7, token->data, internalError, token->linePos, token->colPos);
+				if(data == NULL){
+					if (!*error) *error = 17;
 				}
 			}
 		}
@@ -743,103 +809,5 @@ void parserSemanticsInFunc(bool *inFunc, int *inAux, pToken token){
 
 	else if(token->type == T_END && *inAux){
 		*inAux = *inAux - 1;
-	}
-}
-
-int parserSemanticError(pSemanticsStack semanticError){
-	int error = 0;
-
-	for(int i = 0; i < semanticError->top; i++){
-		if(semanticError->ErrorArray[i].error == 1){
-			fprintf(stderr, "[SEMANTIC] Error: Attempted to redefine function %s!\n", semanticError->ErrorArray[i].name);
-			if(!error) error = 3;
-		}
-
-		else if(semanticError->ErrorArray[i].error == 2){
-			fprintf(stderr, "[SEMANTIC] Error: Variables (%s %u:%u) and functions must have different IDs!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
-			if(!error) error = 3;
-		}
-
-		else if(semanticError->ErrorArray[i].error == 3){
-			fprintf(stderr, "[SEMANTIC] Error: Can't name a variable (%s %u:%u) same as a previously defined function!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
-			if(!error) error = 3;
-		}
-
-		else if(semanticError->ErrorArray[i].error == 4){
-			fprintf(stderr, "[SEMANTIC] Error: Calling an undefined function %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
-			if(!error) error = 3;
-		}
-
-		else if(semanticError->ErrorArray[i].error == 5){
-			fprintf(stderr, "[SEMANTIC] Error: Function %s (%u:%u) can't have another function as an argument!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
-			if(!error) error = 6;
-		}
-
-		else if(semanticError->ErrorArray[i].error == 6){
-			fprintf(stderr, "[SEMANTIC] Error: Wrong number of arguments in function %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
-			if(!error) error = 5;
-		}
-
-		else if(semanticError->ErrorArray[i].error == 7){
-			fprintf(stderr, "[SEMANTIC] Error: Undefined variable %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
-			if(!error) error = 3;
-		}
-
-		else if(semanticError->ErrorArray[i].error == 8){
-			bool done = false;
-
-			for(int k = 0; k < i; k++){
-				if(semanticError->ErrorArray[i].col == semanticError->ErrorArray[k].col &&
-				semanticError->ErrorArray[i].line == semanticError->ErrorArray[k].line &&
-				semanticError->ErrorArray[i].error == semanticError->ErrorArray[k].error)
-					done = true;
-			}
-
-			if(!done){
-				fprintf(stderr, "[SEMANTIC] Error: Can't have arguments of the same name in function %s on line %u:%u!\n", semanticError->ErrorArray[i].name, semanticError->ErrorArray[i].line, semanticError->ErrorArray[i].col);
-				if(!error) error = 6;
-			}
-		}
-
-		else{
-			fprintf(stderr, "[INTERNAL] Error: A seriously weird thing somehow happened!\n");
-			if(!error) error = 99;
-		}
-	}
-	
-	return error;
-}
-
-
-
-
-/*******************************************************STACK*****************************************************************************/
-
-void parserSemanticStackInit(pSemanticsStack *S, int *internalError){
-	if(!S) return;
-	if(!(*S = malloc(sizeof(struct SemanticsStack)))){
-		if (!*internalError) *internalError = 2;
-	}
-
-	(*S)->ErrorArray = NULL;
-	(*S)->top = 0;
-}
-
-void parserSemanticStackDelete(pSemanticsStack *S){
-	free((*S)->ErrorArray);
-	free(*S);
-}
-
-void parserSemanticStackPush(pSemanticsStack S, int error, char *name, int *internalError, int line, int col){
-	if(!(S->ErrorArray = realloc(S->ErrorArray, sizeof(struct Error) * (S->top + 1)))){
-		if (!*internalError) *internalError = 2;
-	}
-
-	else{
-		S->ErrorArray[S->top].error = error;
-		S->ErrorArray[S->top].name = name;
-		S->ErrorArray[S->top].line = line;
-		S->ErrorArray[S->top].col = col;
-		S->top++;
 	}
 }
