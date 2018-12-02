@@ -68,7 +68,7 @@ int vitaDebug(){
 	  	fclose(file_test[i]);
 	  	fclose(file_expected[i]);
 		scannerFreeTokenList(&token);
-		_scannerFSM(NULL, NULL);
+		scannerFSM(NULL, NULL);
 		printf("\033[1;31m");
 		printf("\n________________END OF TEST_%d_________________|\n", i+1);
 		printf("\033[0m");
@@ -104,7 +104,7 @@ int vitaDebug(){
 	  	fclose(file_test[i]);
 	  	fclose(file_expected[i]);
 		scannerFreeTokenList(&token);
-		_scannerFSM(NULL, NULL);
+		scannerFSM(NULL, NULL);
 		printf("\x1B[34m");
 		printf("\n________________END OF TEST_%d_________________|\n", i+1);
 		printf("\033[0m");
@@ -114,7 +114,7 @@ int vitaDebug(){
 }
 
 int yellDebug(){
-	FILE *source1 = fopen("tests/test-code.1", "r");
+	FILE *source1 = fopen("tests/test-code.4", "r");
 
 	pToken token1 = NULL;
 
