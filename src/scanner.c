@@ -1,3 +1,16 @@
+/**
+ * @file scanner.c
+ * 
+ * Lexikální analyzátor
+ * 
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
+
 #include "scanner.h"
 
 int scannerGetTokenList(pToken *firstToken, FILE *file){
@@ -26,7 +39,7 @@ int scannerGetToken(pToken *token, FILE *file){
 	if(file == NULL) file = stdin;
 	if(token == NULL) return 99;
 	
-	*token = malloc(sizeof(struct Token));
+	*token = safeMalloc(sizeof(struct Token));
 	(*token)->data = NULL;
 	(*token)->prevToken = NULL;
 	(*token)->nextToken = NULL;
@@ -35,17 +48,17 @@ int scannerGetToken(pToken *token, FILE *file){
 	do{
 		free((*token)->data);
 		(*token)->data = NULL;
-		if(_scannerFSM(file, *token)) isError = true;
+		if(scannerFSM(file, *token)) isError = true;
 	}while(	(isError && (*token)->type != T_EOF) || 
 			(*token)->type == T_UNKNOWN ||
 			(*token)->linePos == 0 );
 
-	_scannerIsKeyword(*token);
+	scannerIsKeyword(*token);
 
 	return isError ? 1 : 0;
 }
 
-int _scannerFSM(FILE *file, pToken token){
+int scannerFSM(FILE *file, pToken token){
 	sState state = STATE_START;
 	sState nextState;
 	
@@ -69,12 +82,12 @@ int _scannerFSM(FILE *file, pToken token){
 	
 	unsigned int rawStrPos = 0;
 	unsigned int rawStrLength = STRING_CHUNK_LEN;
-	char *rawStr = malloc(sizeof(char)*rawStrLength);
+	char *rawStr = safeMalloc(sizeof(char)*rawStrLength);
 
 	while(isActive){
 		if(rawStrPos >= rawStrLength){
 			rawStrLength += STRING_CHUNK_LEN;
-			rawStr = realloc(rawStr, sizeof(char)*rawStrLength);
+			rawStr = safeRealloc(rawStr, sizeof(char)*rawStrLength);
 		}
 		rawStr[rawStrPos] = currChar;
 		rawStrPos++;
@@ -347,7 +360,7 @@ int _scannerFSM(FILE *file, pToken token){
 		if(token->type != T_UNKNOWN || nextState == STATE_NULL){
 			break; 
 		}else if(nextState == STATE_ERROR){
-			_scannerHandleError(state, currChar, linePos, colPos);
+			scannerHandleError(state, currChar, linePos, colPos);
 			if(state != STATE_START) break;
 			isActive = false;
 		}
@@ -372,7 +385,7 @@ int _scannerFSM(FILE *file, pToken token){
 		case STATE_ID:
 		case STATE_ID_FN:
 			rawStr[rawStrPos-1] = '\0';
-			rawStr = realloc(rawStr, rawStrPos);
+			rawStr = safeRealloc(rawStr, rawStrPos);
 			token->data = rawStr;
 			break;
 		default:
@@ -383,7 +396,7 @@ int _scannerFSM(FILE *file, pToken token){
 	return nextState == STATE_ERROR ? 1 : 0;
 }
 
-bool _scannerIsKeyword(pToken token){
+bool scannerIsKeyword(pToken token){
 	if(token->type != T_ID) return false;
 
 	tType newType = token->type;
@@ -443,7 +456,7 @@ void scannerFreeTokenList(pToken *token){
 	}
 }
 
-void _scannerHandleError(sState state, char currChar, unsigned int line, unsigned int col){
+void scannerHandleError(sState state, char currChar, unsigned int line, unsigned int col){
 	fprintf(stderr, "[SCANNER] Error on line %d:%d - ", line, col);
 	
 	switch(state){

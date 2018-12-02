@@ -1,9 +1,21 @@
+/**
+ * @file main.c
+ * 
+ * Hlavní část překladače
+ * 
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
+
 #include "main.h"
 
 #define NUMERO_OF_TESTS 11
 
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]){
 
 	if(argc > 1){
 		if(strcmp(argv[1], "j32") == 0) return janchDebug();
@@ -15,6 +27,7 @@ int main(int argc, char const *argv[])
 
 	return 0;
 }
+
 int vitaDebug(){
 
 	FILE *file_test[NUMERO_OF_TESTS]; // pocet testu -> lepsi udelat makro
@@ -54,7 +67,7 @@ int vitaDebug(){
 		  fclose(file_test[i]);
 		  fclose(file_expected[i]);
 			scannerFreeTokenList(&token);
-			_scannerFSM(NULL, NULL);
+			scannerFSM(NULL, NULL);
 			printf("\033[1;31m");
 			printf("\n________________END OF TEST_%d_________________|\n", i+1);
 			printf("\033[0m");
@@ -62,6 +75,7 @@ int vitaDebug(){
 	}
   return 0;
 }
+
 int yellDebug(){
 	FILE *source1 = fopen("tests/test-code.1", "r");
 

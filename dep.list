@@ -1,10 +1,11 @@
-codegen.o: src/codegen.c src/codegen.h src/scanner.h
-common.o: src/common.c src/common.h src/scanner.h
+codegen.o: src/codegen.c src/codegen.h src/scanner.h src/common.h \
+ src/symtable.h
+common.o: src/common.c src/common.h
 expressions.o: src/expressions.c src/expressions.h src/scanner.h \
- src/symtable.h src/common.h
-main.o: src/main.c src/main.h src/parser.h src/scanner.h src/symtable.h \
- src/codegen.h src/expressions.h src/common.h
-parser.o: src/parser.c src/parser.h src/scanner.h src/symtable.h \
- src/codegen.h src/expressions.h src/common.h
-scanner.o: src/scanner.c src/scanner.h
-symtable.o: src/symtable.c src/symtable.h
+ src/common.h src/symtable.h
+main.o: src/main.c src/main.h src/parser.h src/scanner.h src/common.h \
+ src/symtable.h src/codegen.h src/expressions.h
+parser.o: src/parser.c src/parser.h src/scanner.h src/common.h \
+ src/symtable.h src/codegen.h src/expressions.h
+scanner.o: src/scanner.c src/scanner.h src/common.h
+symtable.o: src/symtable.c src/symtable.h src/common.h

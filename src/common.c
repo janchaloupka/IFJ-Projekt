@@ -1,3 +1,16 @@
+/**
+ * @file common.c
+ * 
+ * Knihovna pro obecné věci
+ * 
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
+
 #include "common.h"
 
 void *safeMalloc(size_t _Size){
@@ -23,13 +36,13 @@ char *stringToInterpret(char *rawString){
 	
 	int max = rawLen + 1;
 	int pos = 7;
-	char *out = malloc(sizeof(char) * (max + 20));
+	char *out = safeMalloc(sizeof(char) * (max + 20));
 	strcpy(out, "string@");
 
 	for(int i = 1; i < rawLen - 1; i++){
 		if(max <= pos + 4){
 			max += 100;
-			out = realloc(out, sizeof(char) * max);
+			out = safeRealloc(out, sizeof(char) * max);
 		}
 		
 		out[pos] = '\\';
@@ -81,45 +94,45 @@ char *stringToInterpret(char *rawString){
 	}
 
 	out[pos] = '\0';
-	out = realloc(out, sizeof(char) * (pos + 1));
+	out = safeRealloc(out, sizeof(char) * (pos + 1));
 	return out;
 }
 
 char *intToInterpret(char *rawInt){
-	char *out = malloc(sizeof(char) * 50);
+	char *out = safeMalloc(sizeof(char) * 50);
 	if(rawInt[0] == '0' && strlen(rawInt) > 1 && rawInt[1] == 'b'){
 		// printf neumí rozeznat 0b
 		sprintf(out, "int@%ld", strtol(&rawInt[2], NULL, 2));
 	}else sprintf(out, "int@%ld", strtol(rawInt, NULL, 0));
-	return realloc(out, strlen(out));
+	return safeRealloc(out, strlen(out));
 }
 
 char *floatToInterpret(char *rawFloat){
-	char *out = malloc(sizeof(char) * (50));
+	char *out = safeMalloc(sizeof(char) * (50));
 	sprintf(out, "float@%a", strtod(rawFloat, NULL));
-	return realloc(out, strlen(out));
+	return safeRealloc(out, strlen(out));
 }
 
 char *trueToInterpret(){
-	char *out = malloc(sizeof(char) * 10);
+	char *out = safeMalloc(sizeof(char) * 10);
 	strcpy(out, "bool@true");
 	return out;
 }
 
 char *falseToInterpret(){
-	char *out = malloc(sizeof(char) * 11);
+	char *out = safeMalloc(sizeof(char) * 11);
 	strcpy(out, "bool@false");
 	return out;
 }
 
 char *nilToInterpret(){
-	char *out = malloc(sizeof(char) * 8);
+	char *out = safeMalloc(sizeof(char) * 8);
 	strcpy(out, "nil@nil");
 	return out;
 }
 
 char *varToInterpret(char *id){
-	char *out = malloc(sizeof(char) * (strlen(id) + 4));
+	char *out = safeMalloc(sizeof(char) * (strlen(id) + 4));
 
 	strcpy(out, "LF@");
 	strcat(out, id);
@@ -128,7 +141,7 @@ char *varToInterpret(char *id){
 }
 
 char *funcToInterpret(char *id){
-	char *out = malloc(sizeof(char) * (strlen(id) + 4));
+	char *out = safeMalloc(sizeof(char) * (strlen(id) + 4));
 
 	strcpy(out, "GF@");
 	strcat(out, id);
@@ -246,6 +259,21 @@ LABEL $printTypeError\n\
 	WRITE TF@rt\n\
 	WRITE string@)\n\
 	EXIT int@4\n\
+\n\
+LABEL $checkDivByZero\n\
+	POPS GF@$tmp\n\
+	TYPE GF@$tmp2 GF@$tmp\n\
+	JUMPIFEQ $checkDivByZero$float GF@$tmp2 string@float\n\
+	JUMPIFNEQ $checkDivByZero$end GF@$tmp int@0\n\
+	JUMP $checkDivByZero$err\n\
+	LABEL $checkDivByZero$float\n\
+	JUMPIFNEQ $checkDivByZero$end GF@$tmp float@0x0p+0\n\
+	LABEL $checkDivByZero$err\n\
+	WRITE string@\\010[RUNTIME]\\032Divide\\032by\\032zero\\032error\\010\n\
+	EXIT int@9\n\
+	LABEL $checkDivByZero$end\n\
+	PUSHS GF@$tmp\n\
+	RETURN\n\
 \n\
 \n\
 # Konec preddefinovanych funkci\n\

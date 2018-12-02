@@ -1,27 +1,48 @@
+/**
+ * @file symtable.h
+ * 
+ * Tabulka symbolů (implementovaná jako binární strom)
+ * 
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
+
 #pragma once
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include "common.h"
 
-//typ id
+/**
+ * Typ identifikátoru 
+ */
 typedef enum{
-	VAR,
-	FUNC
+	VAR,	//!< Identifikátor je proměnná
+	FUNC	//!< Identifikátor je funkce
 } sType;
 
-//data v uzlu
+/**
+ * Data v uzlu
+ */
 typedef struct sData{
-	sType type;
-	bool defined;
-	struct sTree *localFrame;
-	int params; 
+	sType type;					//!< Typ identifikátoru
+	bool defined;				//!< Byl již identifikátor definovaný
+	struct sTree *localFrame;	//!< Ukazatel na lokální tabulku funkce
+	int params;					//!< Počet parametrů funkce
 } *psData;
 
-//uzel stromu
+/**
+ * Uzel stromu
+ */
 typedef struct sTree{
-	char *key;	
-	struct sData *data;
-	struct sTree *lptr;
-	struct sTree *rptr;
+	char *key;			//!< Identifikátor
+	struct sData *data;	//!< Data uzlu
+	struct sTree *lptr;	//!< Levá větev stromu (menší klíč)
+	struct sTree *rptr;	//!< Pravá větev stromu (větší klíč)
 } *psTree;
 
 /**
@@ -35,6 +56,7 @@ void symTabInit(psTree *tree);
  * Vloží do stromu nový uzel s hodnotou data
  * 
  * @param tree Strom, do kterého se bude vkládat
+ * @param key Klíč uzlu, podle kterého se bude vyhledávat ve stromě
  * @param data Data pro vložení do stromu
  */
 void symTabInsert(psTree *tree, char *key, psData data);

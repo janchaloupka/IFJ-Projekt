@@ -54,7 +54,6 @@ compiler
 compiler.exe*
 
 .DS_Store
-
 obj/
-
 *.tmp
+ic18int*

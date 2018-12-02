@@ -1,5 +1,17 @@
-#include "expressions.h"
+/**
+ * @file expressions.c
+ * 
+ * Zpracování výrazů precedenční analýzou
+ * 
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
 
+#include "expressions.h"
 
 eRelTerm exprConvTypeToTerm(tType tokenType){
 	switch(tokenType){
@@ -38,7 +50,6 @@ eRelTerm exprConvTypeToTerm(tType tokenType){
 			return E_$;
 	}
 }
-
 
 eRelation exprGetRelation(eRelTerm currTerm, eRelTerm newTerm){
 	switch(currTerm){
@@ -297,7 +308,7 @@ int exprStackParse(peStack stack, psTree idTable){
 	bool hasUnknown = rType == E_UNKNOWN;
 	bool isSame = false;
 	
-	// Sémantikcá část
+	// Sémantická část
 	if(!isSingle){
 		hasUnknown = lType == E_UNKNOWN || rType == E_UNKNOWN;
 		
@@ -328,7 +339,10 @@ int exprStackParse(peStack stack, psTree idTable){
 			}
 			if(hasUnknown) printf("CALL $checkIfAdd\n");
 			if((!isSingle && !isSame) || (type != E_INT && type != E_FLOAT && type != E_STRING && type != E_UNKNOWN)){
-				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
+				exprSPPrintError(4, isSingle, isSame, lType, rType, item->val.term);
+				free(item);
+				free(rItem);
+				free(lItem);
 				return 4; // Error
 			}
 			break;
@@ -341,15 +355,31 @@ int exprStackParse(peStack stack, psTree idTable){
 			}
 			if(hasUnknown) printf("CALL $checkIfNum\n");
 			if((!isSingle && !isSame) || (type != E_INT && type != E_FLOAT && type != E_UNKNOWN)){
-				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
+				exprSPPrintError(4, isSingle, isSame, lType, rType, item->val.term);
+				free(item);
+				free(rItem);
+				free(lItem);
 				return 4; // Error
 			}
 			break;
 		case T_MUL:
 			if(hasUnknown) printf("CALL $checkIfNum\n");
 			if(!isSame || (type != E_INT && type != E_FLOAT && type != E_UNKNOWN)){
-				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
-				return 4; // Error
+				exprSPPrintError(isSingle? 2 : 4, isSingle, isSame, lType, rType, item->val.term);
+				free(item);
+				free(rItem);
+				free(lItem);
+				return isSingle ? 2 : 4; // Error
+			}
+			break;
+		case T_DIV:
+			if(hasUnknown) printf("CALL $checkIfNum\n");
+			if(!isSame || (type != E_INT && type != E_FLOAT && type != E_UNKNOWN)){
+				exprSPPrintError(isSingle? 2 : 4, isSingle, isSame, lType, rType, item->val.term);
+				free(item);
+				free(rItem);
+				free(lItem);
+				return isSingle ? 2 : 4; // Error
 			}
 			break;
 		case T_LT:
@@ -358,15 +388,21 @@ int exprStackParse(peStack stack, psTree idTable){
 		case T_GTE:
 			if(hasUnknown) printf("CALL $checkIfLtGt\n");
 			if(!isSame || (type != E_FLOAT && type != E_INT && type != E_UNKNOWN && type != E_STRING)){
-				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
-				return 4; // Error
+				exprSPPrintError(isSingle? 2 : 4, isSingle, isSame, lType, rType, item->val.term);
+				free(item);
+				free(rItem);
+				free(lItem);
+				return isSingle ? 2 : 4; // Error
 			}
 			break;
 		case T_EQL:
 		case T_NEQ:
 			if(isSingle){
-				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
-				return 4; // Error
+				exprSPPrintError(2, isSingle, isSame, lType, rType, item->val.term);
+				free(item);
+				free(rItem);
+				free(lItem);
+				return 2; // Error
 			}else if(hasUnknown) printf("CALL $checkIfEql\n");
 			else if(!isSame) printf("POPS GF@$tmp\nPOPS GF@$tmp\nPUSHS bool@false\n");
 			break;
@@ -377,26 +413,34 @@ int exprStackParse(peStack stack, psTree idTable){
 				printf("POPS GF@$tmp\n");
 			}
 			if(!isSingle || (type != E_BOOL && type != E_UNKNOWN)){
-				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
-				return 4; // Error
+				exprSPPrintError(!isSingle? 2 : 4, isSingle, isSame, lType, rType, item->val.term);
+				free(item);
+				free(rItem);
+				free(lItem);
+				return !isSingle ? 2 : 4; // Error
 			}
 			break;
 		case T_AND:
 		case T_OR:
 			if(hasUnknown) printf("CALL $checkIfBool\n");
 			if(!isSame || (type != E_BOOL && type != E_UNKNOWN)){
-				exprSPPrintError(isSingle, isSame, lType, rType, item->val.term);
-				return 4; // Error
+				exprSPPrintError(isSingle? 2 : 4, isSingle, isSame, lType, rType, item->val.term);
+				free(item);
+				free(rItem);
+				free(lItem);
+				return isSingle? 2 : 4; // Error
 			}
 			break;
 		default:
-			fprintf(stderr, "[INTERNAL] Error on line %d:%d - Got unexpected operator in expression (%s)", 
+			fprintf(stderr, "[INTERNAL] Error on line %d:%d - Got unexpected operator in expression (%s)\n", 
 				item->val.term->linePos,
 				item->val.term->colPos,
 				scannerTypeToString(item->val.term->type)
 				);
+			free(item);
+				free(rItem);
+				free(lItem);
 			return 99; // Return
-			break;
 	}
 
 	// Převod na kód
@@ -416,14 +460,17 @@ int exprStackParse(peStack stack, psTree idTable){
 			printf("MULS\n");
 			break;
 		case T_DIV:
-			if(hasUnknown && (type == E_FLOAT || type == E_INT || type == E_UNKNOWN)){
-				printf("CALL $checkIfNum\n");
+			printf("CALL $checkDivByZero\n");
+			if(hasUnknown){
 				printf("CALL $decideDivOp\n");
-			}else if(isSame && type == E_FLOAT){
+			}else if(type == E_FLOAT){
 				printf("DIVS\n");
-			}else if(isSame && type == E_INT){
+			}else if(type == E_INT){
 				printf("IDIVS\n");
 			}else{
+				free(item);
+				free(rItem);
+				free(lItem);
 				return 4; // Error
 			}
 			break;
@@ -465,8 +512,10 @@ int exprStackParse(peStack stack, psTree idTable){
 			type = E_BOOL;
 			break;
 		default:
+			free(item);
+			free(rItem);
+			free(lItem);
 			return 99; // Return
-			break;
 	}
 
 	free(lItem);
@@ -493,8 +542,11 @@ const char *exprTermTypeToString(eTermType type){
 	return "UNKNOWN";
 }
 
-void exprSPPrintError(bool isSingle, bool isSame, eTermType lt, eTermType rt, pToken op){
-	fprintf(stderr, "[SEMANTIC] Error on line %d:%d - Type error; ", op->linePos, op->colPos);
+void exprSPPrintError(int etype, bool isSingle, bool isSame, eTermType lt, eTermType rt, pToken op){
+	if(etype == 4) fprintf(stderr, "[SEMATIC]");
+	else fprintf(stderr, "[SYNTAX]");
+	fprintf(stderr, " Error on line %d:%d - ", op->linePos, op->colPos);
+	if(etype == 4) fprintf(stderr, "Type error; ");
 	fprintf(stderr, "(Operation %s) ", scannerTypeToString(op->type));
 	if(op->type != T_NOT){
 		if(isSingle){
@@ -505,9 +557,7 @@ void exprSPPrintError(bool isSingle, bool isSame, eTermType lt, eTermType rt, pT
 				exprTermTypeToString(rt)
 				);
 		}else{
-			fprintf(stderr, "Incopatible types %s", 
-				exprTermTypeToString(lt == E_UNKNOWN ? rt : lt)
-				);
+			fprintf(stderr, "Incopatible types %s", exprTermTypeToString(lt == E_UNKNOWN ? rt : lt));
 		}
 	}else{
 		fprintf(stderr, "Operand type %s is not compatible with this operation", exprTermTypeToString(rt));

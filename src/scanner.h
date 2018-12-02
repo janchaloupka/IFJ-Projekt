@@ -3,8 +3,12 @@
  * 
  * Lexikální analyzátor
  * 
- * @version 0.1
- * @date 2018-10-19
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
  */
 
 #pragma once
@@ -14,8 +18,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <ctype.h>
-
-#define EOL '\n'
+#include "common.h"
 
 /**
  * Po kolika znacích se má alokovat pole pro string
@@ -219,23 +222,21 @@ void scannerPrintToken(pToken token);
  */
 void scannerPrintTokenList(pToken token);
 
-
-// ***************************************** //
-//    Interní funkce výhradně pro scanner    //
-// ***************************************** //
-
-
 /**
  * Stavový automat lexikálního analyzátoru implementovaný 
  * podle grafu v dokumentaci. Tato funkce neodlilšuje mezi
  * id a keyword a vrací všechny data bez modifikací
+ * 
+ * Speciální chování:
+ * Pokud parametr file je nastavený na NULL, funkce resetuje
+ * statické proměnné, lze použít při testování
  * 
  * @param file Ukzatel na soubor, ze kterého se má číst
  * @param token Token který má být vyplněn daty
  * @return int Stav operace - 0, pokud vše proběhlo v pořádku, 
  * jinak vrátí chybový kód podle zadání (str 2)
  */
-int _scannerFSM(FILE *file, pToken token);
+int scannerFSM(FILE *file, pToken token);
 
 
 /**
@@ -246,7 +247,7 @@ int _scannerFSM(FILE *file, pToken token);
  * @return true Token je klíčové slovo a byl modifikován
  * @return false Token není klíčové slovo (bez modifikace) 
  */
-bool _scannerIsKeyword(pToken token);
+bool scannerIsKeyword(pToken token);
 
 
 /**
@@ -257,4 +258,4 @@ bool _scannerIsKeyword(pToken token);
  * @param line Číslo aktuálního řádku
  * @param col Pozice písmena na řádku
  */
-void _scannerHandleError(sState state, char currChar, unsigned int line, unsigned int col);
+void scannerHandleError(sState state, char currChar, unsigned int line, unsigned int col);

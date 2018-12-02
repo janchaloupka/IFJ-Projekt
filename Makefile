@@ -19,6 +19,9 @@ clean:
 	rm -rf $(OBJFOLDER)/
 	rm -f $(NAME)
 
+test:
+	./$(NAME) vita
+
 # Generování závislostí
 # při změně souborů spustíme 'make dep'
 dep:
