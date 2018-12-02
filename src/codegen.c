@@ -10,15 +10,17 @@ void codeFromToken(tType type, pToken token, psTree table){
 	static char *id;
 	static char *funcId;
 	static int params = 1;
-	static bool inParams = false;
+	static bool inParams = false; //jsem v parametrech funkce
 	static bool print = false;
 	static int assign = false;
-	static bool inFunc = false;
+	static bool inFunc = false;//jsem ve funkci
 	static bool defFunc = false;
-	static bool defT = false;
+	static bool defT = false; //jde o terminál def
 	static char *assignId;
+	static bool defVar = false; //false = proměnná je použita poporvé
+	static bool builtIn = false;
 
-	if(!alloc){ //pokud ještě neproběhla alokace pro ifWhile
+	if(!alloc){ //pokud ještě neproběhla alokace pro ifWhile -> jen poprvé
 		ifWhile = safeMalloc(STRING_CHUNK_SIZE * sizeof(char)); 
 		alloc = true;
 	}
@@ -31,7 +33,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 		char *result; //TODO: doplnit výsledek expressionu
 
 		case T_ASSIGN:
-			printf("DEFVAR %s\n", id);
+			defVar = (symTabSearch(&table, id))->defined;
+			if(!defVar){
+				printf("DEFVAR %s\n", id);
+			}
 			assign = true; //pro výpis move
 			assignId = id;
 			break;
@@ -43,22 +48,29 @@ void codeFromToken(tType type, pToken token, psTree table){
 			else if(strcmp(token->data, "inputi") == 0){ //LF nebo GF???
 				printf("READ LF@%s int\n", id);
 				assign = false; //protože nechci vypisovat move
+				builtIn = true;
 			}
 			else if(strcmp(token->data, "inputf") == 0){ //LF nebo GF???
 				printf("READ LF@%s float\n", id);
 				assign = false; //protože nechci vypisovat move
+				builtIn = true;
 			}
 			else if(strcmp(token->data, "inputs") == 0){
 				printf("READ LF@%s string\n", id);
 				assign = false; //protože nechci vypisovat move
+				builtIn = true;
 			}
-			else if(defT){
+			else if(defT){//je to id u definice funkce
 				funcId = token->data;
 				defT = false;
 			}
-			else{
-				id = token->data; //id funkcí a proměnných
+			else{ //id funkcí a proměnných
+				id = token->data;
 			}
+			break;
+
+		case N_DEFVAR:
+
 			break;
 
 		case T_DEF:
@@ -70,9 +82,8 @@ void codeFromToken(tType type, pToken token, psTree table){
 			break;
 
 		case N_FUNC:
-			if(!print){ //pokud nejde o funkci print, vytvořím rámec
+			if(!print && !builtIn){ //pokud nejde o funkci print
 				funcId = id;
-				printf("%s\n", funcId);
 				inParams = true;
 				inFunc = true;
 			}
@@ -119,7 +130,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 				else if(strcmp(type, "string") == 0){
 					char *string = stringToInterpret(prevTokenData);
-					printf("MOVE TF@%%%i string@%s\n", params, string);
+					printf("MOVE TF@%%%i %s\n", params, string);
 				}
 
 				else if(strcmp(type, "nil") == 0)
@@ -144,7 +155,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 				else if(strcmp(type, "string") == 0){
 					char *string = stringToInterpret(prevTokenData);
-					printf("WRITE string@%s\n", string);
+					printf("WRITE %s\n", string);
 				}
 
 				else if(strcmp(type, "nil") == 0)
@@ -167,9 +178,14 @@ void codeFromToken(tType type, pToken token, psTree table){
 				printf("CALL $%s\n", funcId);
 				//return hodnoty
 				if(defFunc){ //TODO: tohle by mělo vypadat jinak (zatím nevím jak)
-					printf("JUMP $%s$end\n", funcId);
+					//printf("JUMP $%s$end\n", funcId);
 					printf("LABEL $%s\n", funcId);
 					printf("PUSHFRAME\n");
+					//návratová hodnota
+					printf("DEFVAR LF@%%return\n");
+					printf("MOVE LF@%%return nil@nil\n");
+					//TODO: parametry
+
 					defFunc = false;
 				}
 				inParams = false;
