@@ -77,7 +77,7 @@ int parser(pToken *List){
 		}
 
 		// Volání Klarušina generování kódu
-		//codeFromToken(S.a[S.last], token, localTable);
+		codeFromToken(S.a[S.last], token, localTable);
 
 		error = parserError(error, internalError, &prevToken);
 
@@ -102,63 +102,63 @@ int parser(pToken *List){
 
 int parserError(int error, int internalError, pToken *prevToken){
 	if(internalError == 1){
-		fprintf(stderr, "[INTERNAL ERROR]: Unexpected token on stack!\n");
+		fprintf(stderr, "[INTERNAL] Fatal error - Unexpected token on stack\n");
 		return 99;
 	}
 
 	else if(internalError == 2){
-		fprintf(stderr, "[INTERNAL ERROR]: Failed malloc!\n");
+		fprintf(stderr, "[INTERNAL] Fatal error - Failed malloc\n");
 		return 99;
 	} 
 
 	else if(internalError != 0 && internalError != 1 && internalError != 2){
-		fprintf(stderr, "[INTERNAL ERROR]: Something went terribly wrong!\n");
+		fprintf(stderr, "[INTERNAL] Fatal error - Something went terribly wrong\n");
 		return 99;
 	}
 
 	if(error){
 			if(error == 2){	// Syntax
-				fprintf(stderr, "[SYNTAX] Error on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SYNTAX] Error on line %u:%u\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 2;
 			}
 
 			else if(error == 11){	// Sémantika
-				fprintf(stderr, "[SEMANTIC] Error: Attempted to redefine function on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SEMANTIC] Error on line %u:%u - Attempted to redefine function\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 3;
 			}
 
 			else if(error == 12){	// Sémantika
-				fprintf(stderr, "[SEMANTIC] Error: Variables and functions must have different IDs on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SEMANTIC] Error on line %u:%u - Variables and functions must have different IDs\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 3;
 			}
 
 			else if(error == 13){	// Sémantika
-				fprintf(stderr, "[SEMANTIC] Error: Can't name a variable same as a previously defined function on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SEMANTIC] Error on line %u:%u - Can't name a variable same as a previously defined function\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 3;
 			}
 
 			else if(error == 14){	// Sémantika
-				fprintf(stderr, "[SEMANTIC] Error: Calling an undefined function on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SEMANTIC] Error on line %u:%u - Calling an undefined function\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 3;
 			}
 
 			else if(error == 15){	// Sémantika
-				fprintf(stderr, "[SEMANTIC] Error: Function can't have another function as an argument on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SEMANTIC] Error on line %u:%u - Function can't have another function as an argument\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 6;
 			}
 
 			else if(error == 16){	// Sémantika
-				fprintf(stderr, "[SEMANTIC] Error: Wrong number of arguments in a function on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SEMANTIC] Error on line %u:%u - Wrong number of arguments in a function\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 5;
 			}
 
 			else if(error == 17){	// Sémantika
-				fprintf(stderr, "[SEMANTIC] Error: Undefined variable on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SEMANTIC] Error on line %u:%u - Undefined variable\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 3;
 			}
 
 			else if(error == 18){	// Sémantika
-				fprintf(stderr, "[SEMANTIC] Error: Can't have arguments of the same name in a function on line %u!\n", (*prevToken)->linePos);
+				fprintf(stderr, "[SEMANTIC] Error on line %u:%u - Can't have arguments of the same name in a function\n", (*prevToken)->linePos, (*prevToken)->colPos);
 				return 6;
 			}
 
@@ -175,17 +175,17 @@ int parserError(int error, int internalError, pToken *prevToken){
 			}
 
 			else if(error == 69){	// Syntax
-				fprintf(stderr, "[SYNTAX] Error: Only function names can end with \"!\" and \"?\" symbols!\n");
+				fprintf(stderr, "[SYNTAX] Error - Only function names can end with \"!\" and \"?\" symbols!\n");
 				return 2;
 			}
 
 			else if(error == 42){	// Syntax
-				fprintf(stderr, "[SYNTAX] Error: Only variables can be used when defining parameters of a function!\n");
+				fprintf(stderr, "[SYNTAX] Error - Only variables can be used when defining parameters of a function!\n");
 				return 2;
 			}
 
 			else{	// Nedefinovanej stav, nemělo by nikdy nastat
-				fprintf(stderr, "[INTERNAL ERROR]: Unexplainable unbelievable problem!\n");
+				fprintf(stderr, "[INTERNAL] Fatal error - Unexplainable unbelievable problem!\n");
 				return 99;
 			}
 		}
@@ -752,6 +752,10 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 					param = param->nextToken;
 					params++;
 				}
+
+				else{
+					break;
+				}
 			}
 
 			if(func_data->params == -1 && params >= 1){}	// Print může mít argumentů, kolik chce, pokud je to alespoň jeden
@@ -762,7 +766,9 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 		}
 
 		else{
-			if (!*error) *error = 14;
+			if((*func)->linePos != token->linePos){ // V hlavičce funkce má přednost Syntax error
+				if (!*error) *error = 14;
+			}
 		}
 	}
 
