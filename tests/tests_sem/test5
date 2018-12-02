@@ -14,4 +14,4 @@ paswd = "heslo"
 bar paswd
 print "\n"
 paswd = "password"
-bar paswd
+bar paswd, "ahoj"

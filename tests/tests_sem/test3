@@ -7,7 +7,7 @@ def bar ()
   x
 end
 
-x = barak
+x = 5
 
 while x <= 5 do
   print x

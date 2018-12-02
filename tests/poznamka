@@ -1,0 +1,11 @@
+Co potrebuji udelat:
+
+- napsat semanticke testy -> 11 testu
+- upravit testovaci skript aby testoval vystup ifjcode18
+- upravit main aby bral semanticke testy
+
+CHYBY:
+
+-test7: neosetrene volani funkce funkci
+-test9: hlasi chybu Incorrect checksum for freed object
+-test11: segmentation fault, nekdy projde

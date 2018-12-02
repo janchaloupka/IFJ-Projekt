@@ -1,0 +1,4 @@
+str1 = "Bryle"
+str2 = "Slunecni"
+intNum = 12
+print (str2 + str1 + intNum * intNum)

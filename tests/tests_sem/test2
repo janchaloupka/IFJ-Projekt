@@ -2,5 +2,5 @@ a = 56
 b = "Ahoj"
 
 c = a * b
-
-print c
+var = chr(c)
+print var

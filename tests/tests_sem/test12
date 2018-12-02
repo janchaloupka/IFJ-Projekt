@@ -1,0 +1,12 @@
+intNum = 5
+floatNum = 3.14
+
+shouldBeFloat = intNum + floatNum
+print shouldBeFloat
+
+print "\n"
+
+if (shouldBeFloat != intNum) == true then x = 2
+else
+  print "this is false"
+end

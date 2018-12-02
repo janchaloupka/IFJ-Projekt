@@ -1,0 +1,11 @@
+
+Nalezene chyby:
+
+-test3: obcas hodi chybu s incorrect checksum
+-test5: nesouhlasi formalni parametry fce se skutecnymi
+-test7: neosetrene volani funkce funkci
+-test8: neosetreny EOL za klicovymi slovy 
+-test9: neosetreny EOL za klicovymi slovy 
+-test10: neosetreny EOL za klicovymi slovy 
+-test11: zase! pocet formalnich paramteru funkce a skutecnych param se lisi -> vede na seg fault 
+-test12: neosetreny EOL za klicovymi slovy 
