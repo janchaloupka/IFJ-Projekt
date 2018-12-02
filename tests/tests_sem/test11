@@ -1,0 +1,10 @@
+def foo (arg1, arg2, arg3)
+  arg2 = arg1
+  arg3 = arg2
+  arg3
+end
+
+x = foo(5, 10, 15)
+print x
+x = foo(20,10,15,5)
+print x

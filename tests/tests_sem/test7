@@ -1,0 +1,6 @@
+string = "dreveny\sstul"
+x = 567
+
+len = length(string)
+print (len)
+#print (length(x))

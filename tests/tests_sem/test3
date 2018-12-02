@@ -1,0 +1,15 @@
+def bar ()
+  x = 5
+  while x > 0 do
+    print x
+    x = y - 1
+  end
+  x
+end
+
+x = 5
+
+while x <= 5 do
+  print x
+  x = x +1
+end

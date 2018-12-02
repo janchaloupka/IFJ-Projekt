@@ -1,0 +1,17 @@
+def bar (par1, par2)
+  if par1 == "heslo" then
+    print "enter password:*****"
+    print "\n[Access granted]"
+    print "\n"
+  else
+    print "enter password:********"
+    print "\n[Permission denied]"
+    print "\n"
+  end
+end
+
+paswd = "heslo"
+bar paswd
+print "\n"
+paswd = "password"
+bar paswd, "ahoj"
