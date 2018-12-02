@@ -35,7 +35,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 		case T_ASSIGN:
 			defVar = (symTabSearch(&table, id))->defined;
 			if(!defVar){
-				printf("DEFVAR LF@%s\n", id);
+				printf("DEFVAR %s\n", id);
 			}
 			assign = true; //pro výpis move
 			assignId = id;
@@ -123,10 +123,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 				printf("DEFVAR TF@%%%i\n", params);
 
 				if(strcmp(type, "int") == 0)
-					printf("MOVE TF@%%%i int@%s\n", params, prevTokenData);
+					printf("MOVE TF@%%%i %s\n", params, intToInterpret(prevTokenData));
 
 				else if(strcmp(type, "float") == 0)
-					printf("MOVE TF@%%%i float@%s\n", params, prevTokenData);
+					printf("MOVE TF@%%%i %s\n", params, floatToInterpret(prevTokenData));
 
 				else if(strcmp(type, "string") == 0){
 					char *string = stringToInterpret(prevTokenData);
@@ -148,10 +148,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 			}
 			else{ //jde o print -> WRITE
 				if(strcmp(type, "int") == 0)
-					printf("WRITE int@%s\n", prevTokenData);
+					printf("WRITE %s\n", intToInterpret(prevTokenData));
 				
 				else if(strcmp(type, "float") == 0)
-					printf("WRITE float@%s\n", prevTokenData);
+					printf("WRITE %s\n", floatToInterpret(prevTokenData));
 
 				else if(strcmp(type, "string") == 0){
 					char *string = stringToInterpret(prevTokenData);
@@ -168,7 +168,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 					printf("WRITE bool@false\n");
 
 				else if(strcmp(type, "id") == 0) //-> výpis proměnné
-					printf("WRITE LF@%s\n", prevTokenData);  //bude tam vždycky LF???
+					printf("WRITE %s\n", varToInterpret(prevTokenData));  //bude tam vždycky LF???
 			}
 			break;
 
@@ -194,10 +194,8 @@ void codeFromToken(tType type, pToken token, psTree table){
 				print = false;
 			}
 
-			if(assign){ //řádek s přiřazením 
-				//result = "expr"; //výsledek expressionu
+			if(assign){ //řádek s přiřazením
 				printf("POPS LF@%s\n", assignId);
-				//printf("MOVE LF@%s %s\n", assignId, result);
 				assign = false;
 			}
 			break;
@@ -210,7 +208,6 @@ void codeFromToken(tType type, pToken token, psTree table){
 			break;
 
 		case T_ELSE:
-			result = "expr"; //výsledek expressionu
 			printf("JUMP end$if$%i\n", ifCounter);
 			printf("LABEL else$%i\n", ifCounter);
 			break;
