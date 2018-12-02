@@ -28,8 +28,18 @@ int parser(pToken *List){
 
 	while(preRun != NULL){	// Sémantický pre-run, naplnění tabulky definicemi funkcí
 		parserSemanticsPreRun(&preRun, &funcTable, &error);	// Naplnění tabulky definicí funkcí
-		error = parserError(error, internalError, NULL);
-		if(error) return error;
+		error = parserError(error, internalError, &preRun);
+
+		if(error){
+
+			// Úklid
+
+			symTabDispose(&varTable);
+			symTabDispose(&funcTable);
+			parserSyntaxStackDelete(&S);
+			return error;
+		}
+
 		preRun = preRun->nextToken;
 	}
 
@@ -54,7 +64,7 @@ int parser(pToken *List){
 		}
 
 		// Volání Klarušina generování kódu
-		codeFromToken(S.a[S.last], token, localTable);
+		//codeFromToken(S.a[S.last], token, localTable);
 
 		error = parserError(error, internalError, &prevToken);
 
@@ -643,6 +653,7 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error){
 				}
 
 				symTabInsert(funcTable, (*token)->data, data);
+				symTabSearch(funcTable, (*token)->data)->localFrame = localTable;
 			}
 
 			else{
@@ -707,6 +718,7 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 
 				if(param->data != NULL && (symTabSearch(funcTable, param->data))){	// Pokud je token ID (čárka třeba nemá data) a existuje v tabulce funkcí
 					if (!*error) *error = 15;
+					break;
 				}
 
 				if(param->type == T_COMMA){
