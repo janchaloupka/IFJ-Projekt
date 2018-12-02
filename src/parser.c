@@ -1,3 +1,16 @@
+/**
+ * @file parser.c
+ * 
+ * Syntaktický analyzátor
+ * 
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
+
 #include "parser.h"
 #include "expressions.h"
 

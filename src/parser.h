@@ -3,8 +3,12 @@
  * 
  * Syntaktický analyzátor
  * 
- * @version 0.1
- * @date 2018-11-16
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
  */
 
 #pragma once
@@ -29,7 +33,7 @@ typedef struct{
 } SyntaxStack;
 
 /**
- * Vlastní tělo parseru, v průběhu procházení token-listu zkontroluje syntax i sémantiku
+ * Vlastní tělo parseru, v průběhu procházení token-listu zkontroluje syntax, sémantiku, a volá generátor z codegen.c
  * 
  * @param List Výstup lexikálního analyzátorů, obousměrně provázaný seznam tokenů
  * @return int 99 po interní chybě, 2, 3, 4, 5, 6, 9 podle příslušného výskytu chyby, jinak 0
