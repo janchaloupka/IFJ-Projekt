@@ -35,7 +35,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 		case T_ASSIGN:
 			defVar = (symTabSearch(&table, id))->defined;
 			if(!defVar){
-				printf("DEFVAR %s\n", id);
+				printf("DEFVAR LF@%s\n", id);
 			}
 			assign = true; //pro výpis move
 			assignId = id;
