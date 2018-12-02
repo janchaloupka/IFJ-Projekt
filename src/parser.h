@@ -162,9 +162,10 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
  * @param type Proměnná, nebo funkce
  * @param localFrame Ukazatel na lokální rámec proměnných
  * @param params Počet parametrů
+ * @param defined Byla již proměnná definována a nyní se jedná pouze o redefinici
  * @return psData Ukazatel na datovou položku
  */
-psData parserSemanticsInitData(sType type, struct sTree *localFrame, int params);
+psData parserSemanticsInitData(sType type, struct sTree *localFrame, int params, bool defined);
 
 /**
  * Pomocná funkce vyhodnocující pomocí (geniálního, musím říct) využití semaforu, nacházíme-li se ve funkci (mezi DEF a příslušným END)

@@ -623,14 +623,14 @@ tType parserSyntaxStackPop(SyntaxStack *S, int *internalError){
 /*****************************************************SÉMANTIKA***************************************************************************/
 
 void parserSemanticsInitBuiltIn(psTree *funcTable){
-	symTabInsert(funcTable, "print", parserSemanticsInitData(FUNC, NULL, -1));
-	symTabInsert(funcTable, "inputs", parserSemanticsInitData(FUNC, NULL, 0));
-	symTabInsert(funcTable, "inputi", parserSemanticsInitData(FUNC, NULL, 0));
-	symTabInsert(funcTable, "inputf", parserSemanticsInitData(FUNC, NULL, 0));
-	symTabInsert(funcTable, "length", parserSemanticsInitData(FUNC, NULL, 1));
-	symTabInsert(funcTable, "substr", parserSemanticsInitData(FUNC, NULL, 3));
-	symTabInsert(funcTable, "ord", parserSemanticsInitData(FUNC, NULL, 2));
-	symTabInsert(funcTable, "chr", parserSemanticsInitData(FUNC, NULL, 1));
+	symTabInsert(funcTable, "print", parserSemanticsInitData(FUNC, NULL, -1, true));
+	symTabInsert(funcTable, "inputs", parserSemanticsInitData(FUNC, NULL, 0, true));
+	symTabInsert(funcTable, "inputi", parserSemanticsInitData(FUNC, NULL, 0, true));
+	symTabInsert(funcTable, "inputf", parserSemanticsInitData(FUNC, NULL, 0, true));
+	symTabInsert(funcTable, "length", parserSemanticsInitData(FUNC, NULL, 1, true));
+	symTabInsert(funcTable, "substr", parserSemanticsInitData(FUNC, NULL, 3, true));
+	symTabInsert(funcTable, "ord", parserSemanticsInitData(FUNC, NULL, 2, true));
+	symTabInsert(funcTable, "chr", parserSemanticsInitData(FUNC, NULL, 1, true));
 	return;
 }
 
@@ -642,7 +642,7 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error){
 			if(!(symTabSearch(funcTable, (*token)->data))){
 				psTree localTable;
 				symTabInit(&localTable);
-				psData data = parserSemanticsInitData(FUNC, localTable, 0);
+				psData data = parserSemanticsInitData(FUNC, localTable, 0, true);
 				pToken param;
 				if((*token)->nextToken != NULL) param = (*token)->nextToken->nextToken;
 
@@ -652,7 +652,7 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error){
 					}
 
 					else if(param->type == T_ID){
-						symTabInsert(&localTable, param->data, parserSemanticsInitData(VAR, NULL, 0));
+						symTabInsert(&localTable, param->data, parserSemanticsInitData(VAR, NULL, 0, false));
 						param = param->nextToken;
 						data->params++;
 					}
@@ -692,17 +692,27 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 
 	if(token->type == T_ID && token->nextToken->type == T_ASSIGN){	// Je-li to definice proměnné
 		if(!inFunc){					// A pokud nejsme nikde ve funkci
-			if(symTabSearch(funcTable, token->data)){
+			if(symTabSearch(funcTable, token->data)){	// Pokud je identifikátor už zabrán jakožto název funkce
 				if (!*error) *error = 12;
 			}
-			symTabInsert(varTable, token->data, parserSemanticsInitData(VAR, NULL, 0));
+
+			if(symTabSearch(varTable, token->data)){	// Pokud už existuje v příslušné tabulce, aktualizujeme bool defined
+				symTabInsert(varTable, token->data, parserSemanticsInitData(VAR, NULL, 0, true));
+			}
+
+			else symTabInsert(varTable, token->data, parserSemanticsInitData(VAR, NULL, 0, false));	// Pokud ne, definujeme
 		}
 
 		else{							// Pokud jsme ve funkci
 			if(symTabSearch(funcTable, token->data)){
 				if (!*error) *error = 13;
 			}
-			symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0));
+
+			if(symTabSearch(localTable, token->data)){	// Pokud už existuje v příslušné tabulce, aktualizujeme bool defined
+				symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0, true));
+			}
+
+			else symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0, false));	// Pokud ne, definujeme
 		}
 	}
 
@@ -774,7 +784,7 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 		else{	// Pokud jsme ve funkci
 
 			if((*func)->linePos == token->linePos){		// Pokud jsou to definice proměnných v hlavičce funkce
-				symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0));	// Zadefinujeme je do local rámce
+				symTabInsert(localTable, token->data, parserSemanticsInitData(VAR, NULL, 0, false));	// Zadefinujeme je do local rámce
 
 				pToken aux = token->prevToken;
 				while(aux->type != T_LBRCKT){	// Zkontroluju předchozí, jestli se náhodou nevyskytujou duplicity
@@ -799,11 +809,12 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 	}
 }
 
-psData parserSemanticsInitData(sType type, struct sTree *localTable, int params){
+psData parserSemanticsInitData(sType type, struct sTree *localTable, int params, bool defined){
 	psData data = malloc(sizeof(struct sData));
 	data->type = type;
 	data->localFrame = &(*localTable);
 	data->params = params;
+	data->defined = defined;
 	return data;
 }
 
