@@ -1,1 +1,1 @@
-expected SYNTAX ERR: row 1
+expected SEMANTIC ERR: row 1

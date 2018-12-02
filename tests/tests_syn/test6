@@ -1,7 +1,7 @@
 df foo ()
   x = 50
   y = 40
-  z = (x/y)*y+x;
+  z = (x/y)*y+x
 end
 
 retVal = foo
