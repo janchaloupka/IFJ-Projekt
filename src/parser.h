@@ -29,31 +29,22 @@ typedef struct{
 } SyntaxStack;
 
 /**
- * Pomocný zásobník sémantických errorů 
- */
-typedef struct SemanticsStack{
-    struct Error *ErrorArray;
-    int top;
-} *pSemanticsStack;
-
-/**
- * Sémantická chyba
- */
-typedef struct Error{
-    int error;  // Kód chyby
-    int line;
-    int col;
-    char *name; // Název proměnné s chybou
-} *pError; 
-
-
-/**
  * Vlastní tělo parseru, v průběhu procházení token-listu zkontroluje syntax i sémantiku
  * 
  * @param List Výstup lexikálního analyzátorů, obousměrně provázaný seznam tokenů
  * @return int 99 po interní chybě, 2, 3, 4, 5, 6, 9 podle příslušného výskytu chyby, jinak 0
  */
 int parser(pToken *List);
+
+/**
+ * Vyhodnocení chyb po každém novém cyklu, výstupní hodnota využita i jako návratová hodnota parseru (a potažmo celého programu)
+ * 
+ * @param error Hodnota udávající, zda-li již došlo k syntaktické chybě, a které
+ * @param internalError Hodnota udávající, zda-li již došlo k interní chybě, a které
+ * @param prevToken Hodnota tokenu, u kterého došlo k chybě (k výpisu)
+ * @return Návratová hodnota užita jako návratová hodnota parseru
+ */
+int parserError(int error, int internalError, pToken *prevToken);
 
 
 
@@ -81,17 +72,6 @@ void parserSyntaxCompare(SyntaxStack S, pToken token, int *error);
 void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError, psTree localTable);
 
 /**
- * Vyhodnocení chyb po každém novém cyklu, výstupní hodnota využita i jako návratová hodnota parseru (a potažmo celého programu)
- * 
- * @param error Hodnota udávající, zda-li již došlo k syntaktické chybě, a které
- * @param internalError Hodnota udávající, zda-li již došlo k interní chybě, a které
- * @param prevToken Hodnota tokenu, u kterého došlo k chybě (k výpisu)
- * @param S Zásobník rekurzivního sestupu, určen k výpisu lokace chyby
- * @return Návratová hodnota užita jako návratová hodnota parseru
- */
-int parserSyntaxError(int error, int internalError, pToken *prevToken, SyntaxStack *S);
-
-/**
  * Kontrola, jestli nepoužíváme proměnné s vykřičníkem/otazníkem na konci
  * 
  * @param token Token, kterému kontrolujeme (konkrétně ID) data string pro přítomnost !/? na konci
@@ -109,7 +89,7 @@ void parserSyntaxIDFNCheck(pToken token, psTree *funcTable, int *error);
  * Inicializuje zásobník, na první místo vloží type N_PROG jakožto výchozí stav
  * 
  * @param S Ukazatel na zásobník
- * @return int Jedna po chybě mallocu, jinak nula
+ * @param internalError Jedna po chybě mallocu, jinak nula
  */
 void parserSyntaxStackInit(SyntaxStack *S, int *internalError);
 
@@ -155,11 +135,9 @@ void parserSemanticsInitBuiltIn(psTree *funcTable);
  * 
  * @param token Momentálně zpracovávaný token
  * @param funcTable Tabulka definicí funkcí
- * @param semanticError Zásobník sémantických errorů k pozdějšímu vypsání
- * @param internalError Hodnota k poznamenání si interního erroru (chyba mallocu)
  * @param error Syntaktický error pro zapsání syntaktické chyby při dosazení něčeho jiného než proměnné do hlavičky definice funkce
  */
-void parserSemanticsPreRun(pToken *token, psTree *funcTable, pSemanticsStack semanticError, int *internalError, int *error);
+void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error);
 
 /**
  * Funkce kontrolující sémantické vlastnosti kódu. Dojde-li k syntax erroru, neříká nic, jinak si sémantické errory ukládá na stack a poté vypíše
@@ -169,11 +147,10 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, pSemanticsStack sem
  * @param funcTable Tabulka definicí funkcí
  * @param varTable Tabulka definicí proměnných
  * @param localTable Tabulka definicí lokálních proměnných
- * @param semanticError Zásobník sémantických errorů k pozdějšímu vypsání
+ * @param error Vypsání erroru
  * @param inFunc Hodnota určující, nacházíme-li se momentálně ve funkci
- * @param internalError Hodnota k poznamenání si interního erroru (chyba mallocu)
  */
-void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree *varTable, psTree *localTable, pSemanticsStack semanticError, bool inFunc, int *internalError);
+void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree *varTable, psTree *localTable, int *error, bool inFunc);
 
 /**
  * Pomocná funkce, vytvoří položku typu psData s daty, které jí poskytneme
@@ -193,43 +170,3 @@ psData parserSemanticsInitData(sType type, struct sTree *localFrame, int params)
  * @param token Současný zpracovávaný token
  */
 void parserSemanticsInFunc(bool *inFunc, int *inAux, pToken token);
-
-/**
- * Vyhodnocení sémantických errorů v případě, že syntax je v pořádku
- * 
- * @param semanticError Zásobník chyb, který projdeme, vypíšeme na stderr
- * @return int Není-li zásobník prázdný, vracíme 3 (sémantická chyba), popř 0, nedošlo-li k chybě
- */
-int parserSemanticError(pSemanticsStack semanticError);
-
-
-
-
-/*******************************************************STACK*****************************************************************************/
-
-/**
- * Inicializace zásobníku pro sémantické chyby
- * 
- * @param S Zásobník k inicializaci
- * @param internalError Pro případ, že by nevyšel malloc, k poznamenání si příslušného chybového kódu
- */
-void parserSemanticStackInit(pSemanticsStack *S, int *internalError);
-
-/**
- * Uvolnění paměti sémantického zásobníku
- * 
- * @param S Zásobník z uvolnění
- */
-void parserSemanticStackDelete(pSemanticsStack *S);
-
-/**
- * K přidání sémantické chyby na zásobník chyb k pozdějšímu výpisu
- * 
- * @param S Zásobník, na který pushujeme
- * @param error Kódové číslo chyby
- * @param name Název tokenu, který chybu vyvolal
- * @param internalError Pro případ, že dojde k chybě mallocu
- * @param line Pozice chybného tokenu
- * @param col Pozice chybného tokenu
- */
-void parserSemanticStackPush(pSemanticsStack S, int error, char *name, int *internalError, int line, int col);
