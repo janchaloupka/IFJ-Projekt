@@ -26,7 +26,14 @@ int main(int argc, char const *argv[]){
 		if(strcmp(argv[1], "vita") == 0) return vitaDebug();
 	}
 
-	return 0;
+
+	pToken token;
+	scannerGetTokenList(&token, stdin);
+	generateBaseCode();
+	int retval = parser(&token);
+	scannerFreeTokenList(&token);
+
+	return retval;
 }
 
 int vitaDebug(){
@@ -118,7 +125,6 @@ int yellDebug(){
 
 	pToken token1 = NULL;
 	scannerGetTokenList(&token1, source1);
-	generateBaseCode();
 	parser(&token1);
 	fclose(source1);
 	scannerFreeTokenList(&token1);
