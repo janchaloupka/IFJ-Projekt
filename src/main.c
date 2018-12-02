@@ -1,10 +1,22 @@
+/**
+ * @file main.c
+ *
+ * Hlavní část překladače
+ *
+ * IFJ Projekt 2018, Tým 13
+ *
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
+
 #include "main.h"
 
 #define SYNTAX_TESTS 11
 #define SEMANTIC_TESTS 13
 
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]){
 
 	if(argc > 1){
 		if(strcmp(argv[1], "j32") == 0) return janchDebug();
@@ -16,6 +28,7 @@ int main(int argc, char const *argv[])
 
 	return 0;
 }
+
 int vitaDebug(){
 
 	FILE *file_test[SEMANTIC_TESTS];
@@ -99,6 +112,7 @@ int vitaDebug(){
 	}
   return 0;
 }
+
 int yellDebug(){
 	FILE *source1 = fopen("tests/test-code.1", "r");
 

@@ -5,24 +5,26 @@ void codeFromToken(tType type, pToken token, psTree table){
 	static char *ifWhile; 
 	static int ifCounter = 0;
 	static int whileCounter = 0;
-	static bool defFunc = false;
 	static bool alloc = false;
 	static int endIndex = 0;
 	static char *id;
+	static char *funcId;
 	static int params = 1;
 	static bool inParams = false;
-	static char *funcId;
-	static bool func = false;
 	static bool print = false;
-	static bool assign = false;
+	static int assign = false;
+	static bool inFunc = false;
+	static bool defFunc = false;
+	static bool defT = false;
+	static char *assignId;
 
 	if(!alloc){ //pokud ještě neproběhla alokace pro ifWhile
-		ifWhile = malloc(STRING_CHUNK_SIZE * sizeof(char)); 
+		ifWhile = safeMalloc(STRING_CHUNK_SIZE * sizeof(char)); 
 		alloc = true;
 	}
 
 	if((strlen(ifWhile) - 1) == 100){ //pokud je ifWhile plný
-		ifWhile = realloc(ifWhile, STRING_CHUNK_SIZE);
+		ifWhile = safeRealloc(ifWhile, STRING_CHUNK_SIZE);
 	}
 
 	switch(type){
@@ -31,30 +33,48 @@ void codeFromToken(tType type, pToken token, psTree table){
 		case T_ASSIGN:
 			printf("DEFVAR %s\n", id);
 			assign = true; //pro výpis move
-			break;
-
-		case T_DEF:
-			defFunc = true; //->pro výpis volání funkce - možná není potřeba???
+			assignId = id;
 			break;
 
 		case T_ID:
-			if(defFunc == true){ //je to id u definice funkce
-				funcId = token->data;
-			}
-			else if(strcmp(token->data, "print") == 0){ //->výpis write instrukce
+			if(strcmp(token->data, "print") == 0){ //->výpis write instrukce
 				print = true;
 			}
+			else if(strcmp(token->data, "inputi") == 0){ //LF nebo GF???
+				printf("READ LF@%s int\n", id);
+				assign = false; //protože nechci vypisovat move
+			}
+			else if(strcmp(token->data, "inputf") == 0){ //LF nebo GF???
+				printf("READ LF@%s float\n", id);
+				assign = false; //protože nechci vypisovat move
+			}
+			else if(strcmp(token->data, "inputs") == 0){
+				printf("READ LF@%s string\n", id);
+				assign = false; //protože nechci vypisovat move
+			}
+			else if(defT){
+				funcId = token->data;
+				defT = false;
+			}
 			else{
-				id = token->data; //->pro volání funkce
+				id = token->data; //id funkcí a proměnných
 			}
 			break;
 
+		case T_DEF:
+			printf("CREATEFRAME\n");
+			inParams = true;
+			inFunc = true;
+			defFunc = true;
+			defT = true;
+			break;
 
-		case N_FUNC: //TODO: další vestavěné funkce
+		case N_FUNC:
 			if(!print){ //pokud nejde o funkci print, vytvořím rámec
-				printf("CREATEFRAME\n");
-				func = true;
+				funcId = id;
+				printf("%s\n", funcId);
 				inParams = true;
+				inFunc = true;
 			}
 			break;
 
@@ -97,8 +117,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 				else if(strcmp(type, "float") == 0)
 					printf("MOVE TF@%%%i float@%s\n", params, prevTokenData);
 
-				else if(strcmp(type, "string") == 0) //TODO: tohle není podle zadání, upravit!!!
-					printf("MOVE TF@%%%i string@%s\n", params, prevTokenData);
+				else if(strcmp(type, "string") == 0){
+					char *string = stringToInterpret(prevTokenData);
+					printf("MOVE TF@%%%i string@%s\n", params, string);
+				}
 
 				else if(strcmp(type, "nil") == 0)
 					printf("MOVE TF@%%%i nil@nil\n", params);
@@ -108,6 +130,9 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 				else if(strcmp(type, "false") == 0)
 					printf("MOVE TF@%%%i bool@false\n", params);
+
+				else if(strcmp(type, "id") == 0) //-> výpis proměnné
+					printf("MOVE TF@%%%i TF@%s\n", params, prevTokenData); 
 				params++;
 			}
 			else{ //jde o print -> WRITE
@@ -117,8 +142,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 				else if(strcmp(type, "float") == 0)
 					printf("WRITE float@%s\n", prevTokenData);
 
-				else if(strcmp(type, "string") == 0) //TODO: tohle není podle zadání, upravit!!!
-					printf("WRITE string@%s\n", prevTokenData);
+				else if(strcmp(type, "string") == 0){
+					char *string = stringToInterpret(prevTokenData);
+					printf("WRITE string@%s\n", string);
+				}
 
 				else if(strcmp(type, "nil") == 0)
 					printf("WRITE nil@nil\n");	
@@ -137,11 +164,13 @@ void codeFromToken(tType type, pToken token, psTree table){
 		case T_EOL: //nulování
 			params = 1; //"vynuluju" počet parametrů 
 			if(inParams){ //řádek s parametry
-				if(defFunc){ 
-					printf("CALL $%s\n", funcId);
-				}
-				else if(func){
-					printf("CALL $%s\n", id);
+				printf("CALL $%s\n", funcId);
+				//return hodnoty
+				if(defFunc){ //TODO: tohle by mělo vypadat jinak (zatím nevím jak)
+					printf("JUMP $%s$end\n", funcId);
+					printf("LABEL $%s\n", funcId);
+					printf("PUSHFRAME\n");
+					defFunc = false;
 				}
 				inParams = false;
 			}
@@ -151,22 +180,8 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 			if(assign){ //řádek s přiřazením 
 				result = "expr"; //výsledek expressionu
-				printf("MOVE LF@%s %s\n", id, result);
+				printf("MOVE LF@%s %s\n", assignId, result);
 				assign = false;
-			}
-			break;
-
-		case N_BODY: //-> generuju návěští funkcí
-			if(defFunc){
-				printf("LABEL $%s\n", funcId);
-				printf("PUSHFRAME\n");
-				defFunc = false;
-
-			}
-			else if(func){
-				printf("LABEL $%s\n", id);
-				printf("PUSHFRAME\n");
-				func = false;
 			}
 			break;
 
@@ -184,16 +199,22 @@ void codeFromToken(tType type, pToken token, psTree table){
 			break;
 		
 		case T_END:
-			for(endIndex = 1; ifWhile[strlen(ifWhile) - endIndex] == '0'; endIndex++); //projde nuly na konci ifWhile 
-			
-			if(ifWhile[strlen(ifWhile) - endIndex] == 'i'){ //je to if
-				ifWhile[strlen(ifWhile) - endIndex] = '0';
-				printf("LABEL end$if$%i\n", ifCounter);
+			if(inFunc){//je to end funkce
+				printf("LABEL $%s$end\n", funcId);
+				inFunc = false;
 			}
-			else{ //je to while
-				ifWhile[strlen(ifWhile) - endIndex] = '0';
-				printf("JUMP while$%i\n", whileCounter);
-				printf("LABEL end$while$%i\n", whileCounter);
+			else{
+				for(endIndex = 1; ifWhile[strlen(ifWhile) - endIndex] == '0'; endIndex++); //projde nuly na konci ifWhile 
+			
+				if(ifWhile[strlen(ifWhile) - endIndex] == 'i'){ //je to if
+					ifWhile[strlen(ifWhile) - endIndex] = '0';
+					printf("LABEL end$if$%i\n", ifCounter);
+				}
+				else{ //je to while
+					ifWhile[strlen(ifWhile) - endIndex] = '0';
+					printf("JUMP while$%i\n", whileCounter);
+					printf("LABEL end$while$%i\n", whileCounter);
+				}
 			}
 			break;
 

@@ -1,9 +1,17 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+/**
+ * @file symtable.c
+ * 
+ * Tabulka symbolů (implementovaná jako binární strom)
+ * 
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
 
 #include "symtable.h"
-
 
 void symTabInit(psTree *tree){
 	if(*tree != NULL) 
@@ -28,8 +36,7 @@ void symTabInsert(psTree *tree, char *key, psData data){
 		}
 	}
 
-	psTree newTree = malloc(sizeof(struct sTree));
-	// TODO Ošetřit malloc
+	psTree newTree = safeMalloc(sizeof(struct sTree));
 
 	newTree->data = data;
 	newTree->key = key;
@@ -40,7 +47,7 @@ void symTabInsert(psTree *tree, char *key, psData data){
 }
 
 psData symTabSearch(psTree *tree, char *key){
-	if(tree == NULL) return false;
+	if(tree == NULL) return NULL;
 
 	while(*tree != NULL){
 		int cmp = strcmp(key, (*tree)->key);
