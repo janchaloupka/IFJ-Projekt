@@ -117,8 +117,8 @@ int yellDebug(){
 	FILE *source1 = fopen("tests/test-code.4", "r");
 
 	pToken token1 = NULL;
-
 	scannerGetTokenList(&token1, source1);
+	generateBaseCode();
 	parser(&token1);
 	fclose(source1);
 	scannerFreeTokenList(&token1);

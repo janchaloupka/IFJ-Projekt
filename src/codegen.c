@@ -31,7 +31,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 		char *result; //TODO: doplnit výsledek expressionu
 
 		case T_ASSIGN:
-			printf("DEFVAR %s\n", id);
+			printf("DEFVAR LF@%s\n", id);
 			assign = true; //pro výpis move
 			assignId = id;
 			break;
@@ -119,7 +119,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 				else if(strcmp(type, "string") == 0){
 					char *string = stringToInterpret(prevTokenData);
-					printf("MOVE TF@%%%i string@%s\n", params, string);
+					printf("MOVE TF@%%%i %s\n", params, string);
 				}
 
 				else if(strcmp(type, "nil") == 0)
@@ -144,7 +144,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 				else if(strcmp(type, "string") == 0){
 					char *string = stringToInterpret(prevTokenData);
-					printf("WRITE string@%s\n", string);
+					printf("WRITE %s\n", string);
 				}
 
 				else if(strcmp(type, "nil") == 0)
@@ -179,8 +179,9 @@ void codeFromToken(tType type, pToken token, psTree table){
 			}
 
 			if(assign){ //řádek s přiřazením 
-				result = "expr"; //výsledek expressionu
-				printf("MOVE LF@%s %s\n", assignId, result);
+				//result = "expr"; //výsledek expressionu
+				printf("POPS LF@%s\n", assignId);
+				//printf("MOVE LF@%s %s\n", assignId, result);
 				assign = false;
 			}
 			break;

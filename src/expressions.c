@@ -543,7 +543,7 @@ const char *exprTermTypeToString(eTermType type){
 }
 
 void exprSPPrintError(int etype, bool isSingle, bool isSame, eTermType lt, eTermType rt, pToken op){
-	if(etype == 4) fprintf(stderr, "[SEMATIC]");
+	if(etype == 4) fprintf(stderr, "[SEMANTIC]");
 	else fprintf(stderr, "[SYNTAX]");
 	fprintf(stderr, " Error on line %d:%d - ", op->linePos, op->colPos);
 	if(etype == 4) fprintf(stderr, "Type error; ");

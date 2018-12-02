@@ -278,5 +278,7 @@ LABEL $checkDivByZero\n\
 \n\
 # Konec preddefinovanych funkci\n\
 LABEL $main\n\
+CREATEFRAME\n\
+PUSHFRAME\n\
 \n");
 }
