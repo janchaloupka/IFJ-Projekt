@@ -1,3 +1,36 @@
-b = 2
-a = 3.1/b
-print a, "\n", b, "\n"
+#tenhle kod funguje
+a = 2
+b = 0
+vysledek = chr(33)
+
+print vysledek, "\xA"
+
+while b <= 10 do
+	vysledek = pow(a, b)
+	print a, " na ", b, "\tje: ", vysledek, "\n"
+	b = b + 1
+end
+
+
+def add(a,b)
+	a + b
+end
+
+def mul(a, b)
+	res = 0
+	while b > 0 do
+		res = add(res, a)
+		b = b - 1
+	end
+	res
+end
+
+# exponent a na p
+def pow(a, p)
+	res = 1
+	while p > 0 do
+		res = mul res, a 
+		p = p - 1
+	end
+	res
+end

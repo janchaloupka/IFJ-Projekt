@@ -12,7 +12,16 @@
 #include "scanner.h"
 #include "symtable.h"
 
-#define STRING_CHUNK_SIZE 100                      //Velikost alokační jednotky pole znaků
+/**
+ * Velikost alokační jednotky pole znaků
+ */
+#define IFWHILE_STACK_CHUNK_SIZE 100
 
-
+/**
+ * TODO
+ * 
+ * @param type 
+ * @param token 
+ * @param table 
+ */
 void codeFromToken(tType type, pToken token, psTree table);

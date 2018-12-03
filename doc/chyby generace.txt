@@ -1,0 +1,1 @@
+﻿nefunguje vytvoření proměnné v cyklu

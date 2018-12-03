@@ -275,6 +275,62 @@ LABEL $checkDivByZero\n\
 	PUSHS GF@$tmp\n\
 	RETURN\n\
 \n\
+LABEL $checkIfReturnBool\n\
+	TYPE GF@$tmp TF@$return\n\
+	JUMPIFEQ $checkIfReturnBool$end GF@$tmp string@bool\n\
+	WRITE string@\\010[RUNTIME]\\032Type\\032error\\032-\\032condition\\032in\\032statement\\032must\\032be\\032bool\\010\n\
+	EXIT int@4\n\
+	LABEL $checkIfReturnBool$end\n\
+	RETURN\n\
+\n\
+\n\
+LABEL inputi\n\
+	PUSHFRAME\n\
+	DEFVAR LF@$return\n\
+	READ LF@$return int\n\
+	POPFRAME\n\
+	RETURN\n\
+\n\
+LABEL inputf\n\
+	PUSHFRAME\n\
+	DEFVAR LF@$return\n\
+	READ LF@$return float\n\
+	POPFRAME\n\
+	RETURN\n\
+\n\
+LABEL inputs\n\
+	PUSHFRAME\n\
+	DEFVAR LF@$return\n\
+	READ LF@$return string\n\
+	POPFRAME\n\
+	RETURN\n\
+\n\
+LABEL length\n\
+	PUSHFRAME\n\
+	DEFVAR LF@$return\n\
+	DEFVAR LF@type\n\
+	TYPE LF@type LF@%%1\n\
+	JUMPIFEQ length$cont LF@type string@string\n\
+		WRITE string@\\010[RUNTIME]\\032Type\\032error\\032-\\032Function\\032length()\\032expected\\032type\\032string\\010\n\
+		EXIT int@4\n\
+	LABEL length$cont\n\
+	STRLEN LF@$return LF@%%1\n\
+	POPFRAME\n\
+	RETURN\n\
+\n\
+LABEL chr\n\
+	PUSHFRAME\n\
+	DEFVAR LF@$return\n\
+	DEFVAR LF@type\n\
+	TYPE LF@type LF@%%1\n\
+	JUMPIFEQ chr$cont LF@type string@int\n\
+		WRITE string@\\010[RUNTIME]\\032Type\\032error\\032-\\032Function\\032chr()\\032expected\\032type\\032int\\010\n\
+		EXIT int@4\n\
+	LABEL chr$cont\n\
+	INT2CHAR LF@$return LF@%%1\n\
+	POPFRAME\n\
+	RETURN\n\
+\n\
 \n\
 # Konec preddefinovanych funkci\n\
 LABEL $main\n\

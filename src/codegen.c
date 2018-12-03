@@ -1,252 +1,231 @@
 #include "codegen.h"
 
+
 void codeFromToken(tType type, pToken token, psTree table){
-	
-	static char *ifWhile; 
 	static int ifCounter = 0;
 	static int whileCounter = 0;
-	static bool alloc = false;
-	static int endIndex = 0;
-	static char *id;
-	static char *funcId;
-	static int params = 1;
-	static bool inParams = false; //jsem v parametrech funkce
-	static bool print = false;
-	static int assign = false;
-	static bool inFunc = false;//jsem ve funkci
-	static bool defFunc = false;
-	static bool defT = false; //jde o terminál def
-	static char *assignId;
-	static bool defVar = false; //false = proměnná je použita poporvé
-	static bool builtIn = false;
+	static bool stackSize = IFWHILE_STACK_CHUNK_SIZE;
+	static bool *stack = NULL; // Stack if/while, true = if
+	static int stackTop = 0;
 
-	if(!alloc){ //pokud ještě neproběhla alokace pro ifWhile -> jen poprvé
-		ifWhile = safeMalloc(STRING_CHUNK_SIZE * sizeof(char)); 
-		alloc = true;
+	static char *id; // Poslední načtené id
+	
+	static int assign = false; // Provádí se přiřazení do proměnné
+	static char *assignId; // Id proměnné, do které se přiřazuje
+	
+	static int params = 1; // Počet parametrů
+	
+	static bool callFunc = false; // Volá se funkce
+	static bool callPrint = false; // Jedná se o volání print
+	static char *callId; // Id volané funkce
+	
+	static bool defFunc = false; // Definujeme funkci
+	static bool defTerm = false; // Přečetli jsme terminál def
+	static char *defId = false; // Id definované funkce
+	static bool defParams = false; // Definujeme parametry funkce
+
+
+	if(stack == NULL){ //pokud ještě neproběhla alokace pro ifWhile -> jen poprvé
+		stack = safeMalloc(stackSize * sizeof(bool)); 
 	}
 
-	if((strlen(ifWhile) - 1) == 100){ //pokud je ifWhile plný
-		ifWhile = safeRealloc(ifWhile, STRING_CHUNK_SIZE);
+	if(stackTop + 1 >= stackSize){ //pokud je ifWhile plný
+		stackSize += IFWHILE_STACK_CHUNK_SIZE;
+		stack = safeRealloc(stack, stackSize * sizeof(bool));
 	}
 
 	switch(type){
-		char *result; //TODO: doplnit výsledek expressionu
-
 		case T_ASSIGN:
-			defVar = (symTabSearch(&table, id))->defined;
-			if(!defVar){
-				printf("DEFVAR LF@%s\n", id);
+			{}
+			psData varData = symTabSearch(&table, id);
+			
+			if(!varData->defined){
+				printf("DEFVAR LF@%s\nMOVE LF@%s nil@nil\n", id, id);
+				varData->defined = true;
 			}
 			assign = true; //pro výpis move
 			assignId = id;
 			break;
 
 		case T_ID:
-			if(strcmp(token->data, "print") == 0){ //->výpis write instrukce
-				print = true;
-			}
-			else if(strcmp(token->data, "inputi") == 0){ //LF nebo GF???
-				printf("READ LF@%s int\n", id);
-				assign = false; //protože nechci vypisovat move
-				builtIn = true;
-			}
-			else if(strcmp(token->data, "inputf") == 0){ //LF nebo GF???
-				printf("READ LF@%s float\n", id);
-				assign = false; //protože nechci vypisovat move
-				builtIn = true;
-			}
-			else if(strcmp(token->data, "inputs") == 0){
-				printf("READ LF@%s string\n", id);
-				assign = false; //protože nechci vypisovat move
-				builtIn = true;
-			}
-			else if(defT){//je to id u definice funkce
-				funcId = token->data;
-				defT = false;
-			}
-			else{ //id funkcí a proměnných
+			if(strcmp(token->data, "print") == 0){ // Výpis write instrukce
+				callPrint = true;
+			}else if(defTerm){ // Je to id definice funkce
+				defId = token->data;
+				printf("JUMP %s$end\nLABEL %s\nPUSHFRAME\n", defId, defId);
+				defTerm = false;
+			}else{ // Id funkcí a proměnných
 				id = token->data;
 			}
 			break;
 
-		case N_DEFVAR:
-
+		case T_DEF:
+			defParams = true;
+			defFunc = true;
+			defTerm = true;
 			break;
 
-		case T_DEF:
-			printf("CREATEFRAME\n");
-			inParams = true;
-			inFunc = true;
-			defFunc = true;
-			defT = true;
+		case N_BODY_ID:
+			if(token->type == T_EOL){
+				pToken prev = token->prevToken;
+				if(prev->type == T_ID){
+					printf("CREATEFRAME\n");
+					if(symTabSearch(&table, prev->data) == NULL){
+						// je to funkce
+						printf("CALL %s\n", prev->data);
+					}else{
+						// je to proměnná
+						printf("DEFVAR TF@$return\nMOVE TF@$return LF@%s\n", prev->data);
+					}
+				}
+			}
 			break;
 
 		case N_FUNC:
-			if(!print && !builtIn){ //pokud nejde o funkci print
-				funcId = id;
-				inParams = true;
-				inFunc = true;
+			printf("CREATEFRAME\n");
+			if(!callPrint){ //pokud nejde o funkci print
+				callId = id;
+				callFunc = true;
 			}
 			break;
 
 		case N_PARSN:
-			if(0){}//-> aby si překladač nestěžoval
-			tType prevTokenType = token->prevToken->type;
-			char *prevTokenData = token->prevToken->data;
-			char *type;
-			switch(prevTokenType){//zjistím typ předchozího tokenu (terminál)
+			{}//-> aby si překladač nestěžoval
+			pToken prevToken = token->prevToken;
+
+			char *tokenVal = NULL;
+			switch(prevToken->type){ //zjistím typ předchozího tokenu (terminál)
 				case T_INTEGER:
-				type = "int";
-			 	break;
-			case T_FLOAT:
-				type = "float";
-				break;
-			case T_STRING:
-				type = "string";
-				break;
-			case T_NIL:
-				type = "nil";
-				break;
-			case T_TRUE:
-				type = "true";
-				break;
-			case T_FALSE:
-				type = "false";
-				break;
-			case T_ID:
-				type = "id";
-			default:
-				break;
+					tokenVal = intToInterpret(prevToken->data);
+					break;
+				case T_FLOAT:
+					tokenVal = floatToInterpret(prevToken->data);
+					break;
+				case T_STRING:
+					tokenVal = stringToInterpret(prevToken->data);
+					break;
+				case T_NIL:
+					tokenVal = nilToInterpret();
+					break;
+				case T_TRUE:
+					tokenVal = trueToInterpret();
+					break;
+				case T_FALSE:
+					tokenVal = falseToInterpret();
+					break;
+				case T_ID:
+					tokenVal = varToInterpret(prevToken->data);
+				default: break;
 			}
-
-			if(!print){//jde o funkci -> DEFVAR + MOVE
+			
+			if(tokenVal == NULL) break;
+			else if(callPrint){ // Jde o volání funkce print -> WRITE <hodnota>
+				printf("WRITE %s\n", tokenVal);
+			}else if(defParams){ // Jde o definici funkce
+				printf("DEFVAR %s\nMOVE %s LF@%%%i\n", tokenVal, tokenVal, params);
+				params++;
+			}else{ // Jde o volání funkce -> DEFVAR + MOVE
 				printf("DEFVAR TF@%%%i\n", params);
-
-				if(strcmp(type, "int") == 0)
-					printf("MOVE TF@%%%i %s\n", params, intToInterpret(prevTokenData));
-
-				else if(strcmp(type, "float") == 0)
-					printf("MOVE TF@%%%i %s\n", params, floatToInterpret(prevTokenData));
-
-				else if(strcmp(type, "string") == 0){
-					char *string = stringToInterpret(prevTokenData);
-					printf("MOVE TF@%%%i %s\n", params, string);
-				}
-
-				else if(strcmp(type, "nil") == 0)
-					printf("MOVE TF@%%%i nil@nil\n", params);
-
-				else if(strcmp(type, "true") == 0)
-					printf("MOVE TF@%%%i bool@true\n", params);
-
-				else if(strcmp(type, "false") == 0)
-					printf("MOVE TF@%%%i bool@false\n", params);
-
-				else if(strcmp(type, "id") == 0) //-> výpis proměnné
-					printf("MOVE TF@%%%i TF@%s\n", params, prevTokenData); 
+				printf("MOVE TF@%%%i %s\n", params, tokenVal);
 				params++;
 			}
-			else{ //jde o print -> WRITE
-				if(strcmp(type, "int") == 0)
-					printf("WRITE %s\n", intToInterpret(prevTokenData));
-				
-				else if(strcmp(type, "float") == 0)
-					printf("WRITE %s\n", floatToInterpret(prevTokenData));
-
-				else if(strcmp(type, "string") == 0){
-					char *string = stringToInterpret(prevTokenData);
-					printf("WRITE %s\n", string);
-				}
-
-				else if(strcmp(type, "nil") == 0)
-					printf("WRITE nil@nil\n");	
-
-				else if(strcmp(type, "true") == 0)
-					printf("WRITE bool@true\n");
-
-				else if(strcmp(type, "true") == 0)
-					printf("WRITE bool@false\n");
-
-				else if(strcmp(type, "id") == 0) //-> výpis proměnné
-					printf("WRITE %s\n", varToInterpret(prevTokenData));  //bude tam vždycky LF???
-			}
+			
+			free(tokenVal);
 			break;
 
 		case T_EOL: //nulování
-			params = 1; //"vynuluju" počet parametrů 
-			if(inParams){ //řádek s parametry
-				printf("CALL $%s\n", funcId);
-				//return hodnoty
-				if(defFunc){ //TODO: tohle by mělo vypadat jinak (zatím nevím jak)
-					//printf("JUMP $%s$end\n", funcId);
-					printf("LABEL $%s\n", funcId);
-					printf("PUSHFRAME\n");
-					//návratová hodnota
-					printf("DEFVAR LF@%%return\n");
-					printf("MOVE LF@%%return nil@nil\n");
-					//TODO: parametry
+			params = 1; // "vynuluju" počet parametrů 
 
-					defFunc = false;
-				}
-				inParams = false;
+			if(callFunc){ // Volání funkce
+				printf("CALL %s\n", callId);
+				callFunc = false;
 			}
-			if(print){ //řádek s print funkcí
-				print = false;
+
+			if(callPrint){ //řádek s print funkcí
+				printf("DEFVAR TF@$return\nMOVE TF@$return nil@nil\n");
+				callPrint = false;
+			}
+
+			if(defParams){
+				printf("DEFVAR LF@$return\nCREATEFRAME\nDEFVAR TF@$return\nMOVE TF@$return nil@nil\n");
+				defParams = false;
 			}
 
 			if(assign){ //řádek s přiřazením
-				printf("POPS LF@%s\n", assignId);
+				printf("MOVE LF@%s TF@$return\n", assignId);
 				assign = false;
 			}
 			break;
 
 		case T_THEN:
-			result = "expr"; //výsledek expressionu 
-			ifWhile[strlen(ifWhile) - endIndex] = 'i';
+			stack[stackTop] = true;
+			stackTop++;
 			ifCounter++; //kolikátej je to if
-			printf("JUMPIFNEQ else$%i %s bool@true\n", ifCounter, result);
+			printf("CALL $checkIfReturnBool\n");
+			if(defFunc)
+				 printf("JUMPIFNEQ %s$if$%i$else TF@$return bool@true\nMOVE TF@$return nil@nil\n", defId, ifCounter);
+			else
+				 printf("JUMPIFNEQ $body$if$%i$else TF@$return bool@true\nMOVE TF@$return nil@nil\n", ifCounter);
 			break;
 
 		case T_ELSE:
-			printf("JUMP end$if$%i\n", ifCounter);
-			printf("LABEL else$%i\n", ifCounter);
+			if(defFunc){
+				printf("JUMP %s$if$%i$end\n", defId, ifCounter);
+				printf("LABEL %s$if$%i$else\n", defId, ifCounter);
+			}else{
+				printf("JUMP $body$if$%i$end\n", ifCounter);
+				printf("LABEL $body$if$%i$else\n", ifCounter);
+			}
 			break;
 		
 		case T_END:
-			if(inFunc){//je to end funkce
-				printf("LABEL $%s$end\n", funcId);
-				inFunc = false;
-			}
-			else{
-				for(endIndex = 1; ifWhile[strlen(ifWhile) - endIndex] == '0'; endIndex++); //projde nuly na konci ifWhile 
-			
-				if(ifWhile[strlen(ifWhile) - endIndex] == 'i'){ //je to if
-					ifWhile[strlen(ifWhile) - endIndex] = '0';
-					printf("LABEL end$if$%i\n", ifCounter);
+			if(stackTop > 0){
+				stackTop--;
+				if(stack[stackTop]){
+					// je if
+					if(defFunc)
+						printf("LABEL %s$if$%i$end\n", defId, ifCounter);
+					else
+						printf("LABEL $body$if$%i$end\n", ifCounter);
+					ifCounter--;
+				}else{
+					// je while
+					if(defFunc){
+						printf("JUMP %s$while$%i$start\n", defId, whileCounter);
+						printf("LABEL %s$while$%i$end\n", defId, whileCounter);
+					}else{
+						printf("JUMP $body$while$%i$start\n", whileCounter);
+						printf("LABEL $body$while$%i$end\n", whileCounter);
+					}
+					whileCounter--;
 				}
-				else{ //je to while
-					ifWhile[strlen(ifWhile) - endIndex] = '0';
-					printf("JUMP while$%i\n", whileCounter);
-					printf("LABEL end$while$%i\n", whileCounter);
-				}
+			}else if(defFunc){//je to end funkce
+				printf("MOVE LF@$return TF@$return\nPOPFRAME\nRETURN\nLABEL %s$end\n", defId);
+				defFunc = false;
 			}
 			break;
 
-		case N_WHILE:
-			ifWhile[strlen(ifWhile) - endIndex] = 'w';
+		case T_WHILE:
+			stack[stackTop] = false;
+			stackTop++;
 			whileCounter++; //kolikátej je to while
-			printf("LABEL while$%i\n", whileCounter);
+			if(defFunc)
+				printf("LABEL %s$while$%i$start\n", defId, whileCounter);
+			else
+				printf("LABEL $body$while$%i$start\n", whileCounter);
 			break;
 
 		case T_DO:
-			result = "expr";//výsledek expressionu
-			printf("JUMPIFNEQ end$while$%i %s bool@true\n", whileCounter, result);
+			if(defFunc)
+				 printf("JUMPIFNEQ %s$while$%i$end TF@$return bool@true\n", defId, whileCounter);
+			else
+				 printf("JUMPIFNEQ $body$while$%i$end TF@$return bool@true\n", whileCounter);
 			break;
 
 		case T_EOF:
-			if(alloc){ //uvolnění alokované paměti
-				free(ifWhile);
-				alloc = false;
+			if(stack != NULL){ //uvolnění alokované paměti
+				free(stack);
+				stack = NULL;
 			}
 			break;
 		default: break;

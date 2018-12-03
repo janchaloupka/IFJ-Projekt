@@ -150,6 +150,7 @@ int exprParse(pToken *token, psTree idTable){
 						fprintf(stderr, "[SYNTAX] Error on line %d:%d - Expression cannot be empty\n", (*token)->linePos, (*token)->colPos);
 						retCode = 2;
 					}else {
+						printf("CREATEFRAME\nDEFVAR TF@$return\nPOPS TF@$return\n");
 						retCode = 0;
 					}
 					

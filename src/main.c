@@ -133,24 +133,14 @@ int yellDebug(){
 }
 
 int janchDebug(){
-	FILE *source = fopen("tests/test-expr", "r");
+	FILE *source = fopen("tests/test-input", "r");
 
-	//psTree localId;
-	//symTabInit(&localId);
-	//psData data = malloc(sizeof(struct sData));
-	//data->localFrame = NULL;
-	//symTabInsert(&localId, "a", data);
-
-	pToken token = NULL;
+	pToken token;
 	scannerGetTokenList(&token, source);
 	generateBaseCode();
-	//printf("CREATEFRAME\nPUSHFRAME\nDEFVAR LF@a\nMOVE LF@a string@hello\n");
-	//parser(&token);
-	exprParse(&token, NULL/*localId*/);
-	printf("\nPOPS GF@$tmp\nWRITE GF@$tmp\nWRITE string@\\010\n");
-
-	fclose(source);
+	int retval = parser(&token);
 	scannerFreeTokenList(&token);
-	//symTabDispose(&localId);
-	return 0;
+	fclose(source);
+
+	return retval;
 }
