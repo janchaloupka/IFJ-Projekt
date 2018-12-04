@@ -28,9 +28,14 @@ int main(int argc, char const *argv[]){
 
 
 	pToken token;
-	scannerGetTokenList(&token, stdin);
-	generateBaseCode();
-	int retval = parser(&token);
+
+	int retval = scannerGetTokenList(&token, stdin);
+	
+	if(retval == 0){
+		generateBaseCode();
+		retval = parser(&token);
+	}
+
 	scannerFreeTokenList(&token);
 
 	return retval;
@@ -46,28 +51,29 @@ int vitaDebug(){
  	char testOut[30];
     pToken token = NULL;
 
-	for (int i = 0; i < SYNTAX_TESTS; i++)
-	{
+	for(int i = 0; i < SYNTAX_TESTS; i++){
 		printf("\033[1;33m");
 	  	printf("------------------- TEST_%d -------------------|\n", i+1);
 	  	printf("\033[0m");
 	  	sprintf(test, "tests/tests_syn/test%d", i+1);
 	  	sprintf(testOut, "tests/tests_syn/test%d.out", i+1);
 
-	  	if ((file_expected[i] = fopen(testOut, "r")) == NULL){
+	  	if((file_expected[i] = fopen(testOut, "r")) == NULL){
 	  		printf("nepodarilo se otevrit soubor %s", testOut);
 	  		continue;
 	  	}
-	  	if ((file_test[i] = fopen(test, "r")) == NULL){
+
+	  	if((file_test[i] = fopen(test, "r")) == NULL){
 	  		printf("nepodarilo se otevrit soubor %s", test);
 	  		continue;
 	  	}
 
 	  	c = ' ';
-	  	while (c != EOF) {
-		    c = getc(file_expected[i]);
+	  	while(c != EOF){
+			c = getc(file_expected[i]);
 		    printf("%c",c);
 	  	}
+		
 	  	printf("\n\n");
 
 	  	scannerGetTokenList(&token, file_test[i]);
@@ -79,7 +85,9 @@ int vitaDebug(){
 		printf("\033[1;31m");
 		printf("\n________________END OF TEST_%d_________________|\n", i+1);
 		printf("\033[0m");
-		if (i < SYNTAX_TESTS-1) printf("|\n|\n");
+
+		if(i < SYNTAX_TESTS-1) 
+			printf("|\n|\n");
 	}
 
 	for (int i = 0; i < SEMANTIC_TESTS; i++)
@@ -90,20 +98,22 @@ int vitaDebug(){
 	  	sprintf(test, "tests/tests_sem/test%d", i+1);
 	  	sprintf(testOut, "tests/tests_sem/test%d.out", i+1);
 
-	  	if ((file_expected[i] = fopen(testOut, "r")) == NULL){
+	  	if((file_expected[i] = fopen(testOut, "r")) == NULL){
 	  		printf("nepodarilo se otevrit soubor %s", testOut);
 	  		continue;
 	  	}
-	  	if ((file_test[i] = fopen(test, "r")) == NULL){
-	  	printf("nepodarilo se otevrit soubor %s", test);
+	  	if((file_test[i] = fopen(test, "r")) == NULL){
+	  		printf("nepodarilo se otevrit soubor %s", test);
 	  		continue;
 	  	}
 
 	  	c = ' ';
-	  	while (c != EOF) {
+
+	  	while(c != EOF){
 		    c = getc(file_expected[i]);
 		    printf("%c",c);
 	  	}
+
 	  	printf("\n\n");
 
 	  	scannerGetTokenList(&token, file_test[i]);
@@ -115,8 +125,10 @@ int vitaDebug(){
 		printf("\x1B[34m");
 		printf("\n________________END OF TEST_%d_________________|\n", i+1);
 		printf("\033[0m");
-		if (i < SEMANTIC_TESTS-1) printf("|\n|\n");
+
+		if(i < SEMANTIC_TESTS-1) printf("|\n|\n");
 	}
+
   return 0;
 }
 

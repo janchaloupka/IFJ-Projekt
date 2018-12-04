@@ -37,7 +37,7 @@ int parser(pToken *List){
 	parserSyntaxStackInit(&S, &internalError);
 
 	bool inFunc = false;	// Je-li true, jsme ve funkci
-	int inAux = 0;			// Semafor? Za každý if/while ++, za každý END --
+	int inAux = 0;			// Semafor - za každý if/while ++, za každý END --
 
 	while(preRun != NULL){	// Sémantický pre-run, naplnění tabulky definicemi funkcí
 		parserSemanticsPreRun(&preRun, &funcTable, &error);	// Naplnění tabulky definicí funkcí
@@ -68,10 +68,10 @@ int parser(pToken *List){
 		else{
 			parserSyntaxCompare(S, token, &error);	// Je-li na stacku s čím porovnávat
 			parserSyntaxStackPop(&S, &internalError);
-			parserSyntaxIDFNCheck(token, &funcTable, &error);	// Kontrola ? a ! na konci proměnných
+			parserSyntaxIDFNCheck(token, &funcTable, &error);	// Kontrola ? a ! na konci proměnných (IDs)
 
 			parserSemanticsInFunc(&inFunc, &inAux, token);	// Jsme-li ve funkci - tj. mezi DEF a příslušným END
-			parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, &error, inFunc); // Sémantická analýza
+			parserSemanticsCheck(token, &func, &funcTable, &varTable, &localTable, &error, inFunc); // Sémantická analýza (IDs)
 
 			token = token->nextToken;
 		}
@@ -109,9 +109,14 @@ int parserError(int error, int internalError, pToken *prevToken){
 	else if(internalError == 2){
 		fprintf(stderr, "[INTERNAL] Fatal error - Failed malloc\n");
 		return 99;
+	}
+
+	else if(internalError == 3){
+		fprintf(stderr, "[INTERNAL] Fatal error - Stack underflow\n");
+		return 99;
 	} 
 
-	else if(internalError != 0 && internalError != 1 && internalError != 2){
+	else if(internalError != 0 && internalError != 1 && internalError != 2 && internalError != 3){
 		fprintf(stderr, "[INTERNAL] Fatal error - Something went terribly wrong\n");
 		return 99;
 	}
@@ -199,14 +204,12 @@ int parserError(int error, int internalError, pToken *prevToken){
 /******************************************************SYNTAX******************************************************************************/
 
 void parserSyntaxCompare(SyntaxStack S, pToken token, int *error){
-	if (S.a[S.last] == token->type){
-
-	}
-	else if(!*error) *error = 2;
+	if (S.a[S.last] == token->type){}	// Jsou-li stejné, všecko ok
+	else if(!*error) *error = 2;		// Jinak error
 }
 
 void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError, psTree localTable){
-	if(S->a[S->last] == N_PROG){
+	if(S->a[S->last] == N_PROG){	// Konečný automat podle LL(1) gramatiky
 		if((*token)->type == T_DEF){
 			parserSyntaxStackPop(&(*S), internalError);
 			parserSyntaxStackPush(&(*S), N_PROG, internalError);
@@ -530,7 +533,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 
 	else if(S->a[S->last] == N_EXPR_O){
 		*token = (*token)->prevToken;
-		*error = exprParse(&(*token), localTable);
+		*error = exprParse(&(*token), localTable);	// Volání externí funkce ke zpracování výrazů
 		if(error) 
 			*error = *error * 100;	// Pokud nula, stále nula, jinak 200, 300, 400
 
@@ -543,7 +546,7 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 	}
 
 	else if(S->a[S->last] == N_EXPR){
-		*error = exprParse(&(*token), localTable);
+		*error = exprParse(&(*token), localTable);	// Volání externí funkce ke zpracování výrazů
 		if(error) 
 			*error = *error * 100;	// Pokud nula, stále nula, jinak 200, 300, 400
 
@@ -578,8 +581,8 @@ void parserSyntaxStackInit(SyntaxStack *S, int *internalError){
 	S->last = 0;
 
 	if(!(S->a = malloc(STACK_CHUNK_SIZE * sizeof(tType)))){
-		fprintf(stderr, "[INTERNAL ERROR]: Failed malloc during stack initialization!\n");
-		if (!*internalError) *internalError = 1;
+		if (!*internalError) *internalError = 2;
+		return;
 	}
 
 	S->size = STACK_CHUNK_SIZE;
@@ -593,10 +596,10 @@ void parserSyntaxStackDelete(SyntaxStack *S){
 void parserSyntaxStackPush(SyntaxStack *S, tType type, int *internalError){
 	if (S->top == S->size){
 		S->size += STACK_CHUNK_SIZE;
-		S->a = realloc(S->a, S->size * sizeof(tType));
+		S->a = realloc(S->a, S->size * sizeof(tType));	// Dynamická realokace zásobníku v případě přetečení
 		if(S->a == NULL){
-			fprintf(stderr, "[INTERNAL ERROR]: Failed malloc during stack expansion!\n");
-			if (!*internalError) *internalError = 1;
+			if (!*internalError) *internalError = 2;
+			return;
 		}
 	}
 	
@@ -605,15 +608,14 @@ void parserSyntaxStackPush(SyntaxStack *S, tType type, int *internalError){
 	S->last++;
 }
 
-tType parserSyntaxStackPop(SyntaxStack *S, int *internalError){
+void parserSyntaxStackPop(SyntaxStack *S, int *internalError){
 	if (S->top==0) {
-		fprintf(stderr, "[INTERNAL ERROR]: Stack underflow!\n");
-		if (!*internalError) *internalError = 1;
-		return(T_UNKNOWN);
+		if (!*internalError) *internalError = 3;	// Ošetření podtečení
+		return;
 	}	
 	else {
 		S->last--;
-		return(S->a[S->top--]); 
+		S->top--; 
 	}	
 }
 
@@ -637,16 +639,16 @@ void parserSemanticsInitBuiltIn(psTree *funcTable){
 void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error){
 	if((*token)->type == T_ID){
 
-		if((*token)->prevToken != NULL && (*token)->prevToken->type == T_DEF){
+		if((*token)->prevToken != NULL && (*token)->prevToken->type == T_DEF){	// Jde-li o definici funkce
 			
-			if(!(symTabSearch(funcTable, (*token)->data))){
+			if(!(symTabSearch(funcTable, (*token)->data))){	// A nejde-li o redefinici (jinak error)
 				psTree localTable;
-				symTabInit(&localTable);
+				symTabInit(&localTable);	// Zadefinujeme si lokální rámec
 				psData data = parserSemanticsInitData(FUNC, localTable, 0, true);
 				pToken param;
 				if((*token)->nextToken != NULL) param = (*token)->nextToken->nextToken;
 
-				while(param != NULL){
+				while(param != NULL){	// Spočítání parametrů k pozdějšímu porovnání při volání
 					if(param->type == T_COMMA){
 						param = param->nextToken;
 					}
@@ -657,8 +659,9 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error){
 						data->params++;
 					}
 
-					else if(param->type == T_STRING || param->type == T_FLOAT || param->type == T_INTEGER || param->type == T_NIL || param->type == T_TRUE || param->type == T_FALSE){
-						if (!*error) *error = 42;
+					else if(param->type == T_STRING || param->type == T_FLOAT || param->type == T_INTEGER || 
+					param->type == T_NIL || param->type == T_TRUE || param->type == T_FALSE){ 	// Syntaktická kontrola použití
+						if (!*error) *error = 42;												// typu místo ID v parametrech při definici
 						break;
 					}
 
@@ -666,7 +669,7 @@ void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error){
 				}
 
 				symTabInsert(funcTable, (*token)->data, data);
-				symTabSearch(funcTable, (*token)->data)->localFrame = localTable;
+				symTabSearch(funcTable, (*token)->data)->localFrame = localTable;	// Napojíme lokální rámec k funkci v tabulce funkcí
 			}
 
 			else{

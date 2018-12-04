@@ -23,30 +23,31 @@
 #define STACK_CHUNK_SIZE 1000                      // Velikost alokační jednotky zásobníku
 
 /**
- * Pomocný zásobník k rekurzivnímu sestupu, probíhá na něm rozklad neterminálů
+ * Pomocný zásobník k rekurzivnímu sestupu, probíhá na něm rozklad neterminálů na terminály
  */
 typedef struct{
-    tType *a;
+    tType *a;   // Pole neterminálů/terminálů
     int size;
     int top;    // Index prvního volného místa
 	int last;   // Index naposledy vloženého prvku
 } SyntaxStack;
 
 /**
- * Vlastní tělo parseru, v průběhu procházení token-listu zkontroluje syntax, sémantiku, a volá generátor z codegen.c
+ * Vlastní tělo parseru, v průběhu procházení token-listu zkontroluje syntax (za pomoci externí funkce exprParse z knihovny 
+ * expressions.c), sémantiku, a volá generátor kódu z codegen.c
  * 
  * @param List Výstup lexikálního analyzátorů, obousměrně provázaný seznam tokenů
- * @return int 99 po interní chybě, 2, 3, 4, 5, 6, 9 podle příslušného výskytu chyby, jinak 0
+ * @return int 99 po interní chybě, 2, 3, 4, 5, 6 podle příslušného výskytu chyby ve vstupním kódu, jinak 0
  */
 int parser(pToken *List);
 
 /**
- * Vyhodnocení chyb po každém novém cyklu, výstupní hodnota využita i jako návratová hodnota parseru (a potažmo celého programu)
+ * Vyhodnocení chyb po každém cyklu včetně pre-runu, výstupní hodnota využita i jako návratová hodnota parseru (a potažmo celého programu)
  * 
- * @param error Hodnota udávající, zda-li již došlo k syntaktické chybě, a které
- * @param internalError Hodnota udávající, zda-li již došlo k interní chybě, a které
- * @param prevToken Hodnota tokenu, u kterého došlo k chybě (k výpisu)
- * @return Návratová hodnota užita jako návratová hodnota parseru
+ * @param error Hodnota udávající, zda-li již došlo k chybě, a ke které
+ * @param internalError Hodnota udávající, zda-li již došlo k interní chybě, a ke které
+ * @param prevToken Hodnota tokenu, u kterého došlo k chybě (využito k výpisu)
+ * @return int Návratová hodnota využita jako návratová hodnota parseru
  */
 int parserError(int error, int internalError, pToken *prevToken);
 
@@ -58,18 +59,18 @@ int parserError(int error, int internalError, pToken *prevToken);
 /**
  * Je-li na stacku terminál, porovná jej se vstupním tokenem
  * 
- * @param S Zásobník terminálů/neterminálů určených ke zpracování
+ * @param S Zásobník terminálů/neterminálů určených ke zpracování (v tomto případě je na vrcholu vždy terminál)
  * @param token Momentálně zpracovávaný token
- * @param error Ukazatel na integerovou error hodnotu, do které zapíše dvojku, dojde-li k syntaktickému erroru
+ * @param error Ukazatel na integerovou error hodnotu, do které zapíše dvojku, nejsou-li porovnávané tokeny stejné
  */
 void parserSyntaxCompare(SyntaxStack S, pToken token, int *error);
 
 /**
- * Je-li na zásobníku neterminál, podle tabulky LL gramatiky určí, jak jej dále derivovat, části vloží v pořadí na zásobník
+ * Je-li na zásobníku neterminál, podle tabulky LL(1) gramatiky určí, jak jej dále rozložit, části vloží v opačném pořadí na zásobník
  * 
  * @param S Ukazatel na zásobník terminálů/neterminálů určených ke zpracování
  * @param token Momentálně zpracovávaný token
- * @param error Ukazatel na integerovou error hodnotu, do které zapíše dvojku, dojde-li k syntaktickému erroru
+ * @param error Ukazatel na integerovou error hodnotu, do které zapíše dvojku, nedojde-li k možnosti aplikovat rozkládací pravidlo
  * @param internalError Ukazatel na integerovou error hodnotu, kterou předává stackovým funkcím, k zapsání selhání malloců
  * @param localTable Předává se funkci exprParse
  */
@@ -78,9 +79,9 @@ void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internal
 /**
  * Kontrola, jestli nepoužíváme proměnné s vykřičníkem/otazníkem na konci
  * 
- * @param token Token, kterému kontrolujeme (konkrétně ID) data string pro přítomnost !/? na konci
+ * @param token Token (konkrétně typu T_ID), kterému kontrolujeme data string pro přítomnost !/? na konci
  * @param funcTable Tabulka funkcí, kde by se mělo ID s vykřičníkem/otazníkem nacházet
- * @param error Zapíšeme 69, pokud se nenachází v tabulce IDček
+ * @param error Zapíšeme 69, pokud se v tabulce ID funkcí nenachází
  */
 void parserSyntaxIDFNCheck(pToken token, psTree *funcTable, int *error);
 
@@ -92,35 +93,34 @@ void parserSyntaxIDFNCheck(pToken token, psTree *funcTable, int *error);
 /**
  * Inicializuje zásobník, na první místo vloží type N_PROG jakožto výchozí stav
  * 
- * @param S Ukazatel na zásobník
- * @param internalError Jedna po chybě mallocu, jinak nula
+ * @param S Ukazatel na inicializovaný zásobník
+ * @param internalError Na tuto adresu zapíše 1 po chybě mallocu
  */
 void parserSyntaxStackInit(SyntaxStack *S, int *internalError);
 
 /**
- * Uvolní paměť zásobníku
+ * Korektně uvolní paměť zásobníku
  * 
  * @param S Ukazatel na zásobník
  */
 void parserSyntaxStackDelete(SyntaxStack *S);
 
 /**
- * Pushne terminál/neterminál na zásobník
+ * Vloží terminál/neterminál na vrchol zásobníku
  * 
  * @param S Ukazatel na zásobník
- * @param type Ukazatel na zásobník
- * @param error Dojde-li k chybě mallocu, sem se vloží jedna
+ * @param type Terminál/neterminál vkládáný na zásobník
+ * @param internalError Na tuto adresu zapíše 1 po chybě mallocu
  */
-void parserSyntaxStackPush(SyntaxStack *S, tType type, int *error);
+void parserSyntaxStackPush(SyntaxStack *S, tType type, int *internalError);
 
 /**
  * Popne zásobník
  * 
  * @param S Ukazatel na zásobník
- * @param error Dojde-li k chybě reallocu, sem se vloží jedna
- * @return tType Hodnota na vrcholu zásobníku
+ * @param internalError Na tuto adresu se zapíše 1 při podtečení zásobníku
  */
-tType parserSyntaxStackPop(SyntaxStack *S, int *error);
+void parserSyntaxStackPop(SyntaxStack *S, int *error);
 
 
 
@@ -135,43 +135,43 @@ tType parserSyntaxStackPop(SyntaxStack *S, int *error);
 void parserSemanticsInitBuiltIn(psTree *funcTable);
 
 /**
- * Projde seznam tokenů předem, a zapíše si definice funkcí a počty jejich parametrů
+ * Projde seznam tokenů před oficiálním syntaktickým během, a zapíše si definice funkcí a počty jejich parametrů
  * 
  * @param token Momentálně zpracovávaný token
  * @param funcTable Tabulka definicí funkcí
- * @param error Syntaktický error pro zapsání syntaktické chyby při dosazení něčeho jiného než proměnné do hlavičky definice funkce
+ * @param error Pro zapsání chyby při dosazení něčeho jiného než proměnné do hlavičky definice funkce, nebo pokusu o redefinici funkce
  */
 void parserSemanticsPreRun(pToken *token, psTree *funcTable, int *error);
 
 /**
- * Funkce kontrolující sémantické vlastnosti kódu. Dojde-li k syntax erroru, neříká nic, jinak si sémantické errory ukládá na stack a poté vypíše
+ * Funkce kontrolující sémantické vlastnosti kódu
  * 
  * @param token Momentálně zpracovávaný token
  * @param func Ukazatel na v současnosti zpracovávanou funkci
  * @param funcTable Tabulka definicí funkcí
  * @param varTable Tabulka definicí proměnných
  * @param localTable Tabulka definicí lokálních proměnných
- * @param error Vypsání erroru
+ * @param error Pro vypsání erroru
  * @param inFunc Hodnota určující, nacházíme-li se momentálně ve funkci
  */
 void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree *varTable, psTree *localTable, int *error, bool inFunc);
 
 /**
- * Pomocná funkce, vytvoří položku typu psData s daty, které jí poskytneme
+ * Pomocná funkce, vytvoří položku typu psData s daty, které jí poskytneme, slouží k zapisování do tabulky
  * 
  * @param type Proměnná, nebo funkce
  * @param localFrame Ukazatel na lokální rámec proměnných
  * @param params Počet parametrů
- * @param defined Byla již proměnná definována a nyní se jedná pouze o redefinici
- * @return psData Ukazatel na datovou položku
+ * @param defined Byla-li již proměnná definována a nyní se jedná pouze o redefinici/přiřazení
+ * @return psData Ukazatel na incializovanou datovou položku
  */
 psData parserSemanticsInitData(sType type, struct sTree *localFrame, int params, bool defined);
 
 /**
- * Pomocná funkce vyhodnocující pomocí (geniálního, musím říct) využití semaforu, nacházíme-li se ve funkci (mezi DEF a příslušným END)
+ * Pomocná funkce vyhodnocující pomocí využití semaforu, nacházíme-li se ve funkci (mezi DEF a příslušným END)
  * 
  * @param inFunc Hodnota udávající, zda se nacházíme ve funkci
  * @param inAux Pomocná hodnota, semafor (za každý IF/WHILE inAux++, za každý END inAux--)
- * @param token Současný zpracovávaný token
+ * @param token V současnosti zpracovávaný token
  */
 void parserSemanticsInFunc(bool *inFunc, int *inAux, pToken token);
