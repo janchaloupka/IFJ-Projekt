@@ -353,7 +353,6 @@ int scannerFSM(FILE *file, pToken token){
 				if(currChar != EOF && currChar != EOL) nextState = STATE_BCMT13;
 				break;
 			default:
-				// TODO: Něco udělat když se dostaneme do divnýho stavu
 				break;
 		}
 
