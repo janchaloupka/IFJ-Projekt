@@ -67,7 +67,12 @@ int parser(pToken *List){
 
 		else{
 			parserSyntaxCompare(S, token, &error);	// Je-li na stacku s čím porovnávat
+<<<<<<< HEAD
 			parserSyntaxStackPop(S, &internalError);
+=======
+			parserSyntaxStackPop(&S, &internalError);
+				
+>>>>>>> e3a6df4732bc5577e79ff0295a6753afe3d6b4c8
 			parserSyntaxIDFNCheck(token, &funcTable, &error);	// Kontrola ? a ! na konci proměnných (IDs)
 
 			parserSemanticsInFunc(&inFunc, &inAux, token);	// Jsme-li ve funkci - tj. mezi DEF a příslušným END
