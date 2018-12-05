@@ -63,6 +63,25 @@ psData symTabSearch(psTree *tree, char *key){
 	return NULL;
 }
 
+void symTabLefmostPre(psTree tree, psStack stack){
+	while(tree != NULL){
+		symStackPush(stack, tree);
+		printf("DEFVAR LF@%s\nMOVE LF@%s nil@nil\n", tree->key, tree->key);
+		tree = tree->lptr;
+	}
+}
+
+void symTabDefvarPre(psTree tree){
+	psStack stack;
+	symStackInit(&stack);
+	symTabLefmostPre(tree, stack);
+	while(stack->top >= 0){
+		tree = symStackPop(stack);
+		symTabLefmostPre(tree->rptr, stack);
+	}
+	symStackDispose(&stack);
+}
+
 void symTabDispose(psTree *tree){
 	if(tree == NULL || (*tree) == NULL) return;
 	
@@ -81,4 +100,41 @@ void symTabDispose(psTree *tree){
 	// Uvolnění uzlu
 	free(*tree);
 	*tree = NULL;
+}
+
+void symStackInit(psStack *stack){
+	if(stack == NULL) return;
+
+	*stack = safeMalloc(sizeof(struct sStack));
+	(*stack)->top = -1;
+	(*stack)->size = 0;
+	(*stack)->S = NULL;
+}
+
+void symStackPush(psStack stack, psTree tree){
+	if(stack == NULL) return;
+	
+	stack->top++;
+	if(stack->size <= stack->top){
+		stack->size += SYMTABLE_STACK_CHUNK;
+		stack->S = safeRealloc(stack->S, sizeof(psTree) * stack->size);
+	}
+
+	stack->S[stack->top] = tree;
+}
+
+psTree symStackPop(psStack stack){
+	if(stack == NULL || stack->top < 0)
+		return NULL;
+
+	stack->top--;
+	return stack->S[stack->top + 1];
+}
+
+void symStackDispose(psStack *stack){
+	if(stack == NULL) return;
+
+	free((*stack)->S);
+	free(*stack);
+	*stack = NULL;
 }

@@ -145,12 +145,14 @@ int yellDebug(){
 }
 
 int janchDebug(){
-	FILE *source = fopen("tests/test-input", "r");
+	FILE *source = fopen("tests/test-input-2", "r");
 
 	pToken token;
-	scannerGetTokenList(&token, source);
-	generateBaseCode();
-	int retval = parser(&token);
+	int retval = scannerGetTokenList(&token, source);
+	if(retval == 0){
+		generateBaseCode();
+		retval = parser(&token);
+	}
 	scannerFreeTokenList(&token);
 	fclose(source);
 

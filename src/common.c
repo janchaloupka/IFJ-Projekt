@@ -304,7 +304,8 @@ LABEL inputs\n\
 	READ LF@$return string\n\
 	POPFRAME\n\
 	RETURN\n\
-\n\
+\n");
+	printf("\
 LABEL length\n\
 	PUSHFRAME\n\
 	DEFVAR LF@$return\n\
@@ -331,10 +332,87 @@ LABEL chr\n\
 	POPFRAME\n\
 	RETURN\n\
 \n\
+LABEL ord\n\
+	PUSHFRAME\n\
+	DEFVAR LF@$return\n\
+	TYPE GF@$tmp LF@%%2\n\
+	JUMPIFEQ ord$cont GF@$tmp string@int\n\
+		WRITE string@\\010[RUNTIME]\\032Type\\032error\\032-\\032Function\\032ord()\\032expected\\032second\\032parameter\\032type\\032int\\010\n\
+		EXIT int@4\n\
+	LABEL ord$cont\n\
+	DEFVAR LF@len\n\
+	MOVE LF@$return nil@nil\n\
+	CREATEFRAME\n\
+	DEFVAR TF@%%1\n\
+	MOVE TF@%%1 LF@%%1\n\
+	CALL length\n\
+	MOVE LF@len TF@$return\n\
+	CLEARS\n\
+	PUSHS LF@%%2\n\
+	PUSHS int@0\n\
+	LTS\n\
+	PUSHS LF@%%2\n\
+	PUSHS LF@len\n\
+	LTS\n\
+	NOTS\n\
+	ORS\n\
+	POPS TF@$return\n\
+	JUMPIFEQ ord$nil TF@$return bool@true\n\
+	STRI2INT LF@$return LF@%%1 LF@%%2\n\
+	LABEL ord$nil\n\
+	POPFRAME\n\
+	RETURN\n\
+\n\
+LABEL substr\n\
+	PUSHFRAME\n\
+	DEFVAR LF@$return\n\
+	MOVE LF@$return nil@nil\n\
+	DEFVAR LF@len\n\
+	CREATEFRAME\n\
+	DEFVAR TF@%%1\n\
+	MOVE TF@%%1 LF@%%1\n\
+	CALL length\n\
+	MOVE LF@len TF@$return\n\
+	CLEARS\n\
+	PUSHS LF@%%2\n\
+	PUSHS int@0\n\
+	LTS\n\
+	PUSHS LF@%%2\n\
+	PUSHS LF@len\n\
+	LTS\n\
+	NOTS\n\
+	PUSHS LF@%%3\n\
+	PUSHS int@0\n\
+	LTS\n\
+	ORS\n\
+	ORS\n\
+	POPS GF@$tmp\n\
+	JUMPIFEQ substr$1 GF@$tmp bool@true\n\
+	MOVE LF@$return string@\n\
+	ADD LF@%%3 LF@%%3 LF@%%2\n\
+	LABEL substr$2$cmp\n\
+	CLEARS\n\
+	PUSHS LF@%%2\n\
+	PUSHS LF@%%3\n\
+	LTS\n\
+	PUSHS LF@%%2\n\
+	PUSHS LF@len\n\
+	LTS\n\
+	ANDS\n\
+	POPS GF@$tmp\n\
+	JUMPIFNEQ substr$2$end GF@$tmp bool@true\n\
+	GETCHAR GF@$tmp LF@%%1 LF@%%2\n\
+	CONCAT LF@$return LF@$return GF@$tmp\n\
+	ADD LF@%%2 LF@%%2 int@1\n\
+	JUMP substr$2$cmp\n\
+	LABEL substr$2$end\n\
+	LABEL substr$1\n\
+	\n\
+	POPFRAME\n\
+	RETURN\n\
+	\n\
 \n\
 # Konec preddefinovanych funkci\n\
-LABEL $main\n\
-CREATEFRAME\n\
-PUSHFRAME\n\
+LABEL $main$main\n\
 \n");
 }

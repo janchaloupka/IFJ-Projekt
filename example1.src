@@ -1,0 +1,6 @@
+def foo ()
+  str = "ahoj"
+  print str
+end
+
+foo

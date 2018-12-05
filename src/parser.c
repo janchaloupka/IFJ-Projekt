@@ -769,7 +769,7 @@ void parserSemanticsCheck(pToken token, pToken *func, psTree *funcTable, psTree 
 		}
 
 		else{
-			if((*func)->linePos != token->linePos){ // V hlavičce funkce má přednost Syntax error
+			if((*func != NULL) && token != NULL && (*func)->linePos != token->linePos){ // V hlavičce funkce má přednost Syntax error
 				if (!*error) *error = 14;
 			}
 		}

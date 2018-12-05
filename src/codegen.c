@@ -36,13 +36,6 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 	switch(type){
 		case T_ASSIGN:
-			{}
-			psData varData = symTabSearch(&table, id);
-			
-			if(!varData->defined){
-				printf("DEFVAR LF@%s\nMOVE LF@%s nil@nil\n", id, id);
-				varData->defined = true;
-			}
 			assign = true; //pro výpis move
 			assignId = id;
 			break;
@@ -52,7 +45,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 				callPrint = true;
 			}else if(defTerm){ // Je to id definice funkce
 				defId = token->data;
-				printf("JUMP %s$end\nLABEL %s\nPUSHFRAME\n", defId, defId);
+				printf("JUMP %s$end\nLABEL %s$body\n", defId, defId);
 				defTerm = false;
 			}else{ // Id funkcí a proměnných
 				id = token->data;
@@ -65,6 +58,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 			defTerm = true;
 			break;
 
+		case N_DEFVARID:
 		case N_BODY_ID:
 			if(token->type == T_EOL){
 				pToken prev = token->prevToken;
@@ -122,7 +116,8 @@ void codeFromToken(tType type, pToken token, psTree table){
 			else if(callPrint){ // Jde o volání funkce print -> WRITE <hodnota>
 				printf("WRITE %s\n", tokenVal);
 			}else if(defParams){ // Jde o definici funkce
-				printf("DEFVAR %s\nMOVE %s LF@%%%i\n", tokenVal, tokenVal, params);
+				//printf("DEFVAR %s\nMOVE %s LF@%%%i\n", tokenVal, tokenVal, params);
+				printf("MOVE %s LF@%%%i\n", tokenVal, params);
 				params++;
 			}else{ // Jde o volání funkce -> DEFVAR + MOVE
 				printf("DEFVAR TF@%%%i\n", params);
@@ -171,10 +166,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 		case T_ELSE:
 			if(defFunc){
 				printf("JUMP %s$if$%i$end\n", defId, ifCounter);
-				printf("LABEL %s$if$%i$else\n", defId, ifCounter);
+				printf("LABEL %s$if$%i$else\nMOVE TF@$return nil@nil\n", defId, ifCounter);
 			}else{
 				printf("JUMP $body$if$%i$end\n", ifCounter);
-				printf("LABEL $body$if$%i$else\n", ifCounter);
+				printf("LABEL $body$if$%i$else\nMOVE TF@$return nil@nil\n", ifCounter);
 			}
 			break;
 		
@@ -187,7 +182,7 @@ void codeFromToken(tType type, pToken token, psTree table){
 						printf("LABEL %s$if$%i$end\n", defId, ifCounter);
 					else
 						printf("LABEL $body$if$%i$end\n", ifCounter);
-					ifCounter--;
+					//ifCounter--;
 				}else{
 					// je while
 					if(defFunc){
@@ -197,10 +192,14 @@ void codeFromToken(tType type, pToken token, psTree table){
 						printf("JUMP $body$while$%i$start\n", whileCounter);
 						printf("LABEL $body$while$%i$end\n", whileCounter);
 					}
-					whileCounter--;
+					// While vždycky returnuje nil
+					printf("CREATEFRAME\nDEFVAR TF@$return\nMOVE TF@$return nil@nil\n");
+					//whileCounter--;
 				}
 			}else if(defFunc){//je to end funkce
-				printf("MOVE LF@$return TF@$return\nPOPFRAME\nRETURN\nLABEL %s$end\n", defId);
+				printf("MOVE LF@$return TF@$return\nPOPFRAME\nRETURN\nLABEL %s\nPUSHFRAME\n", defId);
+				symTabDefvarPre(table);
+				printf("JUMP %s$body\nLABEL %s$end\n", defId, defId);
 				defFunc = false;
 			}
 			break;
@@ -226,6 +225,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 			if(stack != NULL){ //uvolnění alokované paměti
 				free(stack);
 				stack = NULL;
+
+				printf("EXIT int@0\nLABEL $main\nCREATEFRAME\nPUSHFRAME\n");
+				symTabDefvarPre(table);
+				printf("JUMP $main$main\n");
 			}
 			break;
 		default: break;

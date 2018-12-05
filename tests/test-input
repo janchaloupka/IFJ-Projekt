@@ -1,11 +1,25 @@
 #tenhle kod funguje
+
+print "Vypocet exponentu zakladu 2\n"
+expMax = vstupInt
+
+def vstupInt()
+	num = 1-2
+	while num < 0 do
+		print "Po jaky exponent od nuly se ma vypocitat: "
+		
+		num = inputi
+		if num < 0 then
+			print("Zadej prosim jen kladne cislo\n")
+		else
+		end
+	end
+	num
+end
+
 a = 2
 b = 0
-vysledek = chr(33)
-
-print vysledek, "\xA"
-
-while b <= 10 do
+while b <= expMax do
 	vysledek = pow(a, b)
 	print a, " na ", b, "\tje: ", vysledek, "\n"
 	b = b + 1
@@ -19,7 +33,7 @@ end
 def mul(a, b)
 	res = 0
 	while b > 0 do
-		res = add(res, a)
+		res = add res, a
 		b = b - 1
 	end
 	res

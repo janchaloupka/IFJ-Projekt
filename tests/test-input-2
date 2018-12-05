@@ -1,0 +1,20 @@
+#print "Zadej retezec: "
+str = "ahoj"
+len = length(str)
+print("Retezec je dlouhy ", len, " znaku\n")
+
+i = 0
+while i < len do
+	val = ord(str, i)
+	char = chr(val)
+	print("Znak na pozici ", i, " je ", char ," a ma hodnotu ", val, "\n")
+	i = i + 1
+end
+
+i = 0
+while i <= len do
+	calc = len - i + 2
+	sub = substr(str, i, calc)
+	print "Substring ", i, " delky ", calc, " je: ", sub, "\n"
+	i = i + 1
+end
