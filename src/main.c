@@ -16,15 +16,15 @@
 #define SYNTAX_TESTS 11
 #define SEMANTIC_TESTS 13
 
-int main(int argc, char const *argv[]){
+int main(/*int argc, char const *argv[]*/){
 
-	if(argc > 1){
+	/*if(argc > 1){
 		if(strcmp(argv[1], "j32") == 0) return janchDebug();
 
 		if(strcmp(argv[1], "yell") == 0) return yellDebug();
 
 		if(strcmp(argv[1], "vita") == 0) return vitaDebug();
-	}
+	}*/
 
 
 	pToken token;

@@ -1,0 +1,62 @@
+=begin
+calc = ((((5 + ((6 / 4.0) * 3)) / 1) / 10) * (8 + ((3 * 6) / 4))) * 2
+print calc, "\n"
+=end
+
+print "Zadej retezec: "
+str = inputs
+len = length(str)
+len = len - 1
+str = substr(str, 0, len) # orizneme newline znak
+
+print("\nRetezec je dlouhy ", len)
+if len == 1 then
+	print " znak"
+else
+	if len >= 2 then
+		if len <= 4 then
+			print " znaky"
+		else # retezec je 5+ znaku
+			print " znaku"
+		end
+	else # Retezec je dlouhy 0 znaku
+		print " znaku"
+	end
+end
+
+print "\n\n"
+
+i = 0
+while i < len do
+	val = ord(str, i)
+	char = chr(val)
+	print("Znak na pozici ", i, " je ", char ," a ma hodnotu ", val, "\n")
+	i = i + 1
+end
+
+print "\n"
+
+i = 0
+while i <= len do
+	calc = len - i
+	sub = substr(str, i, calc)
+	print "Substring ", i, " delky ", calc, " je: ", sub
+	i = i + 1
+
+	if sub == nil then
+		print "\tTyp: nil\n"
+	else
+		print "\tTyp: string\n"
+	end
+end
+len = len + 1
+sub = substr(str, len, 10)
+print "Substring mimo rozsah (", len, ", 10) "
+
+if sub == nil then
+	print "je"
+else
+	print "neni"
+end
+
+print " nil\n"

@@ -18,7 +18,7 @@
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="800" code="9" xpos="500" linewidth="1">BCMT10</state>
     <state pencolor="0" exit_actions="" radius="40" description="" finalstate="0" entry_actions="" moore_outputs="" ypos="800" code="8" xpos="700" linewidth="1">BCMT11</state>
     <state pencolor="0" exit_actions="" radius="45" description="" finalstate="1" entry_actions="" moore_outputs="" ypos="800" code="12" xpos="900" linewidth="1">BCMT12</state>
-    <state pencolor="0" exit_actions="" radius="45" description="" finalstate="1" entry_actions="" moore_outputs="" ypos="800" code="10" xpos="1100" linewidth="1">BCMT13</state>
+    <state pencolor="0" exit_actions="" radius="45" description="" finalstate="1" entry_actions="" moore_outputs="" ypos="983" code="10" xpos="900" linewidth="1">BCMT13</state>
     <transition c1x="300.41646414935" c2y="679.9869886956554" c1y="719.9934943478277" description="" straight="1" type="2" ypos="760" endx="301.2493900951088" xpos="300.0000011764706" endy="639.9804830434831" c2x="300.8329271222294">
       <from>0</from>
       <to>1</to>
@@ -31,7 +31,7 @@
       <inputs default="0" any="0" invert="0">e</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="379.9741302770204" c2y="398.4457696345444" c1y="398.2241324783944" description="" straight="1" type="2" ypos="398.0024953222443" endx="460.0222037208338" xpos="339.9500935551138" endy="398.6674067906945" c2x="419.9981669989272">
+    <transition c1x="379.9741302770205" c2y="398.4457696345444" c1y="398.2241324783943" description="" straight="1" type="2" ypos="398.0024953222443" endx="460.0222037208338" xpos="339.9500935551138" endy="398.6674067906945" c2x="419.9981669989271">
       <from>2</from>
       <to>3</to>
       <inputs default="0" any="0" invert="0">g</inputs>
@@ -43,7 +43,7 @@
       <inputs default="0" any="0" invert="0">i</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="779.9861363823919" c2y="400.4298839201461" c1y="400.8597678402923" description="" straight="1" type="2" ypos="401.2896517604384" endx="860" xpos="739.9792045735879" endy="400" c2x="819.993068191196">
+    <transition c1x="779.9861363823919" c2y="400.4298839201462" c1y="400.8597678402923" description="" straight="1" type="2" ypos="401.2896517604384" endx="860" xpos="739.9792045735879" endy="400" c2x="819.993068191196">
       <from>4</from>
       <to>11</to>
       <inputs default="0" any="0" invert="0">n</inputs>
@@ -55,7 +55,7 @@
       <inputs default="0" any="0" invert="0">SPACE</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="827.6177416227439" c2y="526.2158500461183" c1y="479.338611852089" description="" straight="1" type="2" ypos="432.4613736580598" endx="729.5976029358377" xpos="876.627810966197" endy="573.0930882401475" c2x="778.6076722792908">
+    <transition c1x="827.6177416227439" c2y="526.2158500461183" c1y="479.3386118520891" description="" straight="1" type="2" ypos="432.4613736580598" endx="729.5976029358377" xpos="876.627810966197" endy="573.0930882401475" c2x="778.6076722792908">
       <from>11</from>
       <to>7</to>
       <inputs default="0" any="0" invert="0">EOL</inputs>
@@ -103,16 +103,10 @@
       <inputs default="0" any="0" invert="0">EOL</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="436.5384866590712" c2y="505.532252656179" c1y="498.1538595504026" description="" straight="1" type="2" ypos="561.7330447828457" endx="515.6758151613049" xpos="488.3535353686922" endy="563.1996084391946" c2x="573.9989507478585">
+    <transition c1x="518.3669999501802" c2y="388.5279792254841" c1y="479.3993516552869" description="" straight="0" type="2" ypos="561.768839651122" endx="870.1036272526536" xpos="511.7634339535009" endy="573.4254464468032" c2x="544.8535966246665">
       <from>5</from>
-      <to>5</to>
+      <to>6</to>
       <inputs default="0" any="0" invert="0">Σ-{EOL,e}</inputs>
-      <outputs></outputs>
-    </transition>
-    <transition c1x="402.6980662021297" c2y="732.586362183869" c1y="870.2305751022649" description="" straight="1" type="2" ypos="814.2179775650892" endx="462.2201281317537" xpos="462.6121796040659" endy="786.8591750023491" c2x="400.7256254797064">
-      <from>9</from>
-      <to>9</to>
-      <inputs default="0" any="0" invert="0">Σ-{EOL,n}</inputs>
       <outputs></outputs>
     </transition>
     <transition c1x="578.1411572283156" c2y="678.1811022175034" c1y="725.9919403403949" description="" straight="1" type="2" ypos="773.8027784632864" endx="673.9683450617613" xpos="530.2275633115927" endy="630.3702640946119" c2x="626.0547511450384">
@@ -127,10 +121,10 @@
       <inputs default="0" any="0" invert="0">n</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="760.6814780841016" c2y="892.430121907595" c1y="903.526606326725" description="" straight="1" type="2" ypos="838.5681816574029" endx="683.3338115802715" xpos="710.606383155514" endy="836.3625929157714" c2x="623.4710998109398">
-      <from>8</from>
-      <to>8</to>
-      <inputs default="0" any="0" invert="0">Σ-{EOL,d}</inputs>
+    <transition c1x="562.8268252757756" c2y="988.8413835851648" c1y="871.282866117618" description="" straight="0" type="2" ypos="827.7243486500714" endx="885.8138306351784" xpos="528.8333225960743" endy="637.3999010527114" c2x="807.8203279554771">
+      <from>9</from>
+      <to>6</to>
+      <inputs default="0" any="0" invert="0">Σ-{EOL,n}</inputs>
       <outputs></outputs>
     </transition>
     <transition c1x="701.2057917070719" c2y="679.9906363666348" c1y="720.0034764541035" description="" straight="1" type="2" ypos="760.0163165415722" endx="701.3325932093055" xpos="701.1423909559551" endy="639.9777962791661" c2x="701.2691924581887">
@@ -145,22 +139,28 @@
       <inputs default="0" any="0" invert="0">d</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="981.6715952030245" c2y="800.7689780237765" c1y="800.3844890118883" description="" straight="1" type="2" ypos="800" endx="1055.014785609073" xpos="945" endy="801.1534670356648" c2x="1018.343190406049">
-      <from>12</from>
-      <to>10</to>
-      <inputs default="0" any="0" invert="0">SPACE</inputs>
+    <transition c1x="745.2647565584681" c2y="728.6512676221034" c1y="754.2080179532954" description="" straight="0" type="2" ypos="770.2172223741404" endx="872.7819560253089" xpos="726.701800630081" endy="629.311739665052" c2x="766.672455976848">
+      <from>8</from>
+      <to>6</to>
+      <inputs default="0" any="0" invert="0">Σ-{EOL,d}</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="901.3696724701839" c2y="678.3313776127185" c1y="716.6781783993283" description="" straight="1" type="2" ypos="755.024979185938" endx="901.1106826896141" xpos="901.4991673604687" endy="639.9845768261088" c2x="901.240177579899">
+    <transition c1x="954.639948200018" c2y="668.8651022854029" c1y="729.3808750965109" description="" straight="0" type="2" ypos="766.7026966971826" endx="913.8282143530943" xpos="930.2702757298341" endy="637.5337246726845" c2x="944.0683919329932">
       <from>12</from>
       <to>6</to>
       <inputs default="0" any="0" invert="0">Σ-{EOL,SPACE}</inputs>
       <outputs></outputs>
     </transition>
-    <transition c1x="1037.075638764185" c2y="703.9298523287018" c1y="691.9929411424205" description="" straight="1" type="2" ypos="756.5793809622228" endx="1118.857617985779" xpos="1088.18264655787" endy="759.1418276974797" c2x="1179.972037153088">
+    <transition c1x="903.4428645696651" c2y="906.9969685403764" c1y="875.9162838736276" description="" straight="1" type="2" ypos="844.8355992068788" endx="902.6424909878161" xpos="903.8430513605896" endy="938.0776532071252" c2x="903.0426777787407">
+      <from>12</from>
+      <to>10</to>
+      <inputs default="0" any="0" invert="0">SPACE</inputs>
+      <outputs></outputs>
+    </transition>
+    <transition c1x="745.6271385620287" c2y="915.3331391174315" c1y="1054.727241972642" description="" straight="0" type="2" ypos="998.4033737225014" endx="857.7092959430204" xpos="857.7183718624158" endy="967.6215621610983" c2x="771.5848592675937">
       <from>10</from>
       <to>10</to>
-      <inputs default="0" any="0" invert="0">Σ-{EOL}</inputs>
+      <inputs default="0" any="0" invert="0">Σ-{EOL,EOF}</inputs>
       <outputs></outputs>
     </transition>
   </machine>

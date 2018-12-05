@@ -1,3 +1,16 @@
+/**
+ * @file codegen.c
+ * 
+ * Generace kódu z tokenů
+ * 
+ * IFJ Projekt 2018, Tým 13
+ * 
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
+ */
+
 #include "codegen.h"
 
 
@@ -154,6 +167,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 		case T_THEN:
 			stackTop++;
+			if(stackTop >= stackSize){
+				stackSize += IFWHILE_STACK_CHUNK_SIZE;
+				stack = safeRealloc(stack, stackSize * sizeof(struct cStackItem));
+			}
 			stack[stackTop].id = ifCounter;
 			stack[stackTop].isIf = true;
 			ifCounter++; //kolikátej je to if
@@ -190,6 +207,10 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 		case T_WHILE:
 			stackTop++;
+			if(stackTop >= stackSize){
+				stackSize += IFWHILE_STACK_CHUNK_SIZE;
+				stack = safeRealloc(stack, stackSize * sizeof(struct cStackItem));
+			}
 			stack[stackTop].id = whileCounter;
 			stack[stackTop].isIf = false;
 			whileCounter++; //kolikátej je to while

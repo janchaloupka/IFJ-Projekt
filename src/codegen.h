@@ -1,10 +1,14 @@
 /**
  * @file codegen.h
  * 
+ * Generace kódu z tokenů
  * 
+ * IFJ Projekt 2018, Tým 13
  * 
- * @version 0.1
- * @date 2018-11-29
+ * @author <xforma04> Klára Formánková
+ * @author <xlanco00> Jan Láncoš
+ * @author <xsebel04> Vít Šebela
+ * @author <xchalo16> Jan Chaloupka
  */
 
 #include <stdio.h>
@@ -23,10 +27,10 @@ typedef struct cStackItem{
 } *pcStackItem;
 
 /**
- * TODO
+ * Vygeneruje kód z tokenu, funkce je volána syntaktickým analyzátorem při každém načtení tokenu
  * 
- * @param type 
- * @param token 
- * @param table 
+ * @param type Gramatický stav, ve kterém se parser nachází
+ * @param token Aktuálně načtený token
+ * @param table Lokální tabulka proměnných aktuální funkce
  */
 void codeFromToken(tType type, pToken token, psTree table);
