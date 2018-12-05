@@ -173,14 +173,14 @@ LABEL $checkIfLtGt\n\
 LABEL $checkIfEql\n\
 	CALL $getType\n\
 	\n\
-	JUMPIFNEQ $decideEqlOp$diff TF@%%return string@different\n\
+	JUMPIFEQ $decideEqlOp$diff TF@%%return string@different\n\
 	PUSHS TF@rv\n\
 	PUSHS TF@lv\n\
 	RETURN\n\
 	\n\
 	LABEL $decideEqlOp$diff\n\
 	PUSHS bool@false\n\
-	PUSHS bool@false\n\
+	PUSHS bool@true\n\
 	RETURN\n\
 \n\
 LABEL $decideDivOp\n\
@@ -379,8 +379,8 @@ LABEL substr\n\
 	LTS\n\
 	PUSHS LF@%%2\n\
 	PUSHS LF@len\n\
-	LTS\n\
-	NOTS\n\
+	GTS\n\
+	#NOTS\n\
 	PUSHS LF@%%3\n\
 	PUSHS int@0\n\
 	LTS\n\

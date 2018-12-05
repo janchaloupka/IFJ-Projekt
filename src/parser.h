@@ -25,12 +25,12 @@
 /**
  * Pomocný zásobník k rekurzivnímu sestupu, probíhá na něm rozklad neterminálů na terminály
  */
-typedef struct{
+typedef struct SyntaxStack{
     tType *a;   // Pole neterminálů/terminálů
     int size;
     int top;    // Index prvního volného místa
 	int last;   // Index naposledy vloženého prvku
-} SyntaxStack;
+} *pSyntaxStack;
 
 /**
  * Vlastní tělo parseru, v průběhu procházení token-listu zkontroluje syntax (za pomoci externí funkce exprParse z knihovny 
@@ -63,7 +63,7 @@ int parserError(int error, int internalError, pToken *prevToken);
  * @param token Momentálně zpracovávaný token
  * @param error Ukazatel na integerovou error hodnotu, do které zapíše dvojku, nejsou-li porovnávané tokeny stejné
  */
-void parserSyntaxCompare(SyntaxStack S, pToken token, int *error);
+void parserSyntaxCompare(pSyntaxStack S, pToken token, int *error);
 
 /**
  * Je-li na zásobníku neterminál, podle tabulky LL(1) gramatiky určí, jak jej dále rozložit, části vloží v opačném pořadí na zásobník
@@ -74,7 +74,7 @@ void parserSyntaxCompare(SyntaxStack S, pToken token, int *error);
  * @param internalError Ukazatel na integerovou error hodnotu, kterou předává stackovým funkcím, k zapsání selhání malloců
  * @param localTable Předává se funkci exprParse
  */
-void parserSyntaxExpand(SyntaxStack *S, pToken *token, int *error, int *internalError, psTree localTable);
+void parserSyntaxExpand(pSyntaxStack S, pToken *token, int *error, int *internalError, psTree localTable);
 
 /**
  * Kontrola, jestli nepoužíváme proměnné s vykřičníkem/otazníkem na konci
@@ -96,14 +96,14 @@ void parserSyntaxIDFNCheck(pToken token, psTree *funcTable, int *error);
  * @param S Ukazatel na inicializovaný zásobník
  * @param internalError Na tuto adresu zapíše 1 po chybě mallocu
  */
-void parserSyntaxStackInit(SyntaxStack *S, int *internalError);
+void parserSyntaxStackInit(pSyntaxStack *S, int *internalError);
 
 /**
  * Korektně uvolní paměť zásobníku
  * 
  * @param S Ukazatel na zásobník
  */
-void parserSyntaxStackDelete(SyntaxStack *S);
+void parserSyntaxStackDelete(pSyntaxStack *S);
 
 /**
  * Vloží terminál/neterminál na vrchol zásobníku
@@ -112,7 +112,7 @@ void parserSyntaxStackDelete(SyntaxStack *S);
  * @param type Terminál/neterminál vkládáný na zásobník
  * @param internalError Na tuto adresu zapíše 1 po chybě mallocu
  */
-void parserSyntaxStackPush(SyntaxStack *S, tType type, int *internalError);
+void parserSyntaxStackPush(pSyntaxStack S, tType type, int *internalError);
 
 /**
  * Popne zásobník
@@ -120,7 +120,7 @@ void parserSyntaxStackPush(SyntaxStack *S, tType type, int *internalError);
  * @param S Ukazatel na zásobník
  * @param internalError Na tuto adresu se zapíše 1 při podtečení zásobníku
  */
-void parserSyntaxStackPop(SyntaxStack *S, int *error);
+void parserSyntaxStackPop(pSyntaxStack S, int *error);
 
 
 

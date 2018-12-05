@@ -4,9 +4,9 @@
 void codeFromToken(tType type, pToken token, psTree table){
 	static int ifCounter = 0;
 	static int whileCounter = 0;
-	static bool stackSize = IFWHILE_STACK_CHUNK_SIZE;
-	static bool *stack = NULL; // Stack if/while, true = if
-	static int stackTop = 0;
+	static int stackSize = IFWHILE_STACK_CHUNK_SIZE;
+	static pcStackItem stack = NULL; // Stack if/while, true = if
+	static int stackTop = -1;
 
 	static char *id; // Poslední načtené id
 	
@@ -26,12 +26,12 @@ void codeFromToken(tType type, pToken token, psTree table){
 
 
 	if(stack == NULL){ //pokud ještě neproběhla alokace pro ifWhile -> jen poprvé
-		stack = safeMalloc(stackSize * sizeof(bool)); 
+		stack = safeMalloc(stackSize * sizeof(struct cStackItem)); 
 	}
 
 	if(stackTop + 1 >= stackSize){ //pokud je ifWhile plný
 		stackSize += IFWHILE_STACK_CHUNK_SIZE;
-		stack = safeRealloc(stack, stackSize * sizeof(bool));
+		stack = safeRealloc(stack, stackSize * sizeof(int));
 	}
 
 	switch(type){
@@ -153,49 +153,33 @@ void codeFromToken(tType type, pToken token, psTree table){
 			break;
 
 		case T_THEN:
-			stack[stackTop] = true;
 			stackTop++;
+			stack[stackTop].id = ifCounter;
+			stack[stackTop].isIf = true;
 			ifCounter++; //kolikátej je to if
 			printf("CALL $checkIfReturnBool\n");
-			if(defFunc)
-				 printf("JUMPIFNEQ %s$if$%i$else TF@$return bool@true\nMOVE TF@$return nil@nil\n", defId, ifCounter);
-			else
-				 printf("JUMPIFNEQ $body$if$%i$else TF@$return bool@true\nMOVE TF@$return nil@nil\n", ifCounter);
+			printf("JUMPIFNEQ $if$%i$else TF@$return bool@true\nMOVE TF@$return nil@nil\n", stack[stackTop].id);
 			break;
 
 		case T_ELSE:
-			if(defFunc){
-				printf("JUMP %s$if$%i$end\n", defId, ifCounter);
-				printf("LABEL %s$if$%i$else\nMOVE TF@$return nil@nil\n", defId, ifCounter);
-			}else{
-				printf("JUMP $body$if$%i$end\n", ifCounter);
-				printf("LABEL $body$if$%i$else\nMOVE TF@$return nil@nil\n", ifCounter);
-			}
+			printf("JUMP $if$%i$end\n", stack[stackTop].id);
+			printf("LABEL $if$%i$else\nMOVE TF@$return nil@nil\n", stack[stackTop].id);
 			break;
 		
 		case T_END:
-			if(stackTop > 0){
-				stackTop--;
-				if(stack[stackTop]){
+			if(stackTop >= 0){
+				if(stack[stackTop].isIf){
 					// je if
-					if(defFunc)
-						printf("LABEL %s$if$%i$end\n", defId, ifCounter);
-					else
-						printf("LABEL $body$if$%i$end\n", ifCounter);
-					//ifCounter--;
+					printf("LABEL $if$%i$end\n", stack[stackTop].id);
 				}else{
 					// je while
-					if(defFunc){
-						printf("JUMP %s$while$%i$start\n", defId, whileCounter);
-						printf("LABEL %s$while$%i$end\n", defId, whileCounter);
-					}else{
-						printf("JUMP $body$while$%i$start\n", whileCounter);
-						printf("LABEL $body$while$%i$end\n", whileCounter);
-					}
+					printf("JUMP $while$%i$start\n", stack[stackTop].id);
+					printf("LABEL $while$%i$end\n", stack[stackTop].id);
+					
 					// While vždycky returnuje nil
 					printf("CREATEFRAME\nDEFVAR TF@$return\nMOVE TF@$return nil@nil\n");
-					//whileCounter--;
 				}
+				stackTop--;
 			}else if(defFunc){//je to end funkce
 				printf("MOVE LF@$return TF@$return\nPOPFRAME\nRETURN\nLABEL %s\nPUSHFRAME\n", defId);
 				symTabDefvarPre(table);
@@ -205,20 +189,15 @@ void codeFromToken(tType type, pToken token, psTree table){
 			break;
 
 		case T_WHILE:
-			stack[stackTop] = false;
 			stackTop++;
+			stack[stackTop].id = whileCounter;
+			stack[stackTop].isIf = false;
 			whileCounter++; //kolikátej je to while
-			if(defFunc)
-				printf("LABEL %s$while$%i$start\n", defId, whileCounter);
-			else
-				printf("LABEL $body$while$%i$start\n", whileCounter);
+			printf("LABEL $while$%i$start\n", stack[stackTop].id);
 			break;
 
 		case T_DO:
-			if(defFunc)
-				 printf("JUMPIFNEQ %s$while$%i$end TF@$return bool@true\n", defId, whileCounter);
-			else
-				 printf("JUMPIFNEQ $body$while$%i$end TF@$return bool@true\n", whileCounter);
+			printf("JUMPIFNEQ $while$%i$end TF@$return bool@true\n", stack[stackTop].id);
 			break;
 
 		case T_EOF:

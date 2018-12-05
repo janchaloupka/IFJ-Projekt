@@ -17,6 +17,11 @@
  */
 #define IFWHILE_STACK_CHUNK_SIZE 100
 
+typedef struct cStackItem{
+	bool isIf;
+	int id;
+} *pcStackItem;
+
 /**
  * TODO
  * 

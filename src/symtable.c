@@ -14,8 +14,7 @@
 #include "symtable.h"
 
 void symTabInit(psTree *tree){
-	if(*tree != NULL) 
-		*tree = NULL;
+	if(tree != NULL) *tree = NULL;
 }
 
 void symTabInsert(psTree *tree, char *key, psData data){

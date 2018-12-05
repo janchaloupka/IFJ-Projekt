@@ -106,6 +106,7 @@ char *varToInterpret(char *id);
 char *funcToInterpret(char *id);
 
 /**
- * Vygeneruje na standartní výstup hlavičku kódu interpretu
+ * Vygeneruje na standartní výstup hlavičku kódu interpretu, která obsahuje základní 
+ * funkce na kontrolu typů a vestavěné funkce jazyka IFJ18
  */
 void generateBaseCode();
