@@ -4,27 +4,27 @@ Překladač jazyka IFJ18 - Projekt do IFJ 2018, první varianta zadání
 ## Hodnocení projektu
 
 ### Implementace
-**Bodů celkem:** 73,54
+**Bodů celkem:** 73,54\
 **Komentář k hodnocení:** OK
 
-**Lexikální analýza (detekce chyb):** 100% (200/200)
-**Syntaktická analýza (detekce chyb):** 86% (173/200)
-**Sémantická analýza (detekce chyb):** 83% (115/138)
-**Běhové chyby (detekce):** 87% (54/62)
-**Interpretace přeloženého kódu:** 98% (933/951)
-**BOOLOP** 95% (100/105)
-**BASE** 100% (50/50)
-**CYCLES** 0% (0/100)
-**DEFINED** 0% (0/50)
-**FUNEXP** 0% (0/150)
-**IFTHEN** 0% (0/100)
+**Lexikální analýza (detekce chyb):** 100% (200/200)\
+**Syntaktická analýza (detekce chyb):** 86% (173/200)\
+**Sémantická analýza (detekce chyb):** 83% (115/138)\
+**Běhové chyby (detekce):** 87% (54/62)\
+**Interpretace přeloženého kódu:** 98% (933/951)\
+**BOOLOP** 95% (100/105)\
+**BASE** 100% (50/50)\
+**CYCLES** 0% (0/100)\
+**DEFINED** 0% (0/50)\
+**FUNEXP** 0% (0/150)\
+**IFTHEN** 0% (0/100)\
 **Celkem bez rozšíření:** 95% (1475/1551)
 
 ### Dokumentace
-**Bodů celkem:** 5
+**Bodů celkem:** 5\
 **Komentář k hodnocení:** typ., strukt., stylistika
 ### Prémiové body
-**Bodů celkem:** 2.5
+**Bodů celkem:** 2.5\
 2. místo v rychlostní soutěži
 
 
